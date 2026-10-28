@@ -38,3 +38,9 @@ sudo systemctl start adsb-tv
 ```
 
 Non esporre la porta 8090 direttamente su Internet.
+
+## Airport countries and coordinates
+
+The airport_db.py module downloads the public-domain OurAirports airports.csv and countries.csv in a background thread, caches matching IATA/ICAO codes in /home/pi/.cache/adsb-tv/airports.json, and provides country names and coordinates without per-second web requests. A first lookup can take some seconds. If the download fails, country remains unavailable. Source: https://ourairports.com/data/
+
+For manual updates, copy airport_db.py alongside server.py and index.html into /opt/adsb-tv before restarting the service.
