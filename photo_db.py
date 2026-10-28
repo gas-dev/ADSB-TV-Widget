@@ -34,24 +34,27 @@ def lookup(hexcode, registration=None):
         if cached and cached[0]>now:
             return cached[1]
     result=None
+    # HexDB has returned usable thumbnails on this Raspberry, so try it first.
     try:
-        result=planespotters('hex/'+hexcode)
+        data=fetch('https://hexdb.io/api/v2/aircraft/'+hexcode)
+        images=data.get('images') or {}
+        url=images.get('thumbnail') if isinstance(images,dict) else None
+        parsed=urlparse(url or '')
+        if parsed.scheme=='https' and parsed.hostname=='hexdb.io':
+            result={'url':url,'photographer':None,'source':'HexDB','link':'https://hexdb.io/'}
     except Exception as exc:
-        print('Photo hex lookup failed:',str(exc),flush=True)
+        print('HexDB lookup failed:',str(exc),flush=True)
+    # Planespotters may respond with HTTP 403 on this network.
+    if not result:
+        try:
+            result=planespotters('hex/'+hexcode)
+        except Exception as exc:
+            print('Photo hex lookup failed:',str(exc),flush=True)
     if not result and reg and len(reg)<=14 and all(c.isalnum() or c=='-' for c in reg):
         try:
             result=planespotters('reg/'+quote(reg,safe=''))
         except Exception as exc:
             print('Photo reg lookup failed:',str(exc),flush=True)
-    if not result:
-        try:
-            data=fetch('https://hexdb.io/api/v2/aircraft/'+hexcode)
-            url=(data.get('images') or {}).get('thumbnail')
-            parsed=urlparse(url or '')
-            if parsed.scheme=='https' and parsed.hostname=='hexdb.io':
-                result={'url':url,'photographer':None,'source':'HexDB','link':'https://hexdb.io/'}
-        except Exception as exc:
-            print('HexDB lookup failed:',str(exc),flush=True)
     with _lock:
         _cache[key]=(now+(86400 if result else 900),result)
         if len(_cache)>1000:
