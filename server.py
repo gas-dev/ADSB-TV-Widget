@@ -40,12 +40,15 @@ def live():
         if not isinstance(nm,(int,float)):
             continue
         b = dict(a)
-        b['distance_km'] = round(nm*1.852,1)
+        km = nm * 1.852
+        if km > 100:
+            continue
+        b['distance_km'] = round(km,1)
         candidates.append(b)
     candidates.sort(key=lambda a: a['distance_km'])
     return {'now':data.get('now'),'count':len(data.get('aircraft',[])),
             'positioned':len(candidates),'receiver':{'lat':lat0,'lon':lon0},
-            'aircraft':candidates[:10], 'source':'local ADS-B readsb'}
+            'aircraft':candidates[:10], 'radius_km':100,'source':'local ADS-B readsb'}
 
 class Handler(BaseHTTPRequestHandler):
     def send(self, code, body, mime):
