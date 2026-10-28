@@ -6,7 +6,7 @@ if [ ! -f "$SCRIPT_DIR/server.py" ] || [ ! -f "$SCRIPT_DIR/index.html" ]; then e
 if ! /usr/bin/python3 -m py_compile "$SCRIPT_DIR/server.py"; then exit 1; fi
 if ss -ltn | grep -Eq ':8090[[:space:]]'; then echo 'La porta 8090 è già in uso. Nessuna modifica effettuata.'; exit 1; fi
 install -d -m 755 /opt/adsb-tv
-install -m 644 "$SCRIPT_DIR/server.py" "$SCRIPT_DIR/index.html" /opt/adsb-tv/
+install -m 644 "$SCRIPT_DIR/server.py" "$SCRIPT_DIR/index.html" "$SCRIPT_DIR/airport_db.py" /opt/adsb-tv/
 cat > /etc/systemd/system/adsb-tv.service <<'UNIT'
 [Unit]
 Description=Lightweight ADS-B TV widget
