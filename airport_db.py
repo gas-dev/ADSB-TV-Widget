@@ -63,6 +63,22 @@ def _refresh():
         with _lock:
             _loading = False
 
+def load_local_cache():
+    """Load the existing file immediately; do not wait for an internet request."""
+    global _index
+    if not CACHE.is_file():
+        return
+    try:
+        data = json.loads(CACHE.read_text(encoding='utf-8'))
+        if isinstance(data, dict):
+            with _lock:
+                _index = data
+            print(f'Airport cache loaded: {len(data)} codes', flush=True)
+    except (OSError, ValueError) as exc:
+        print(f'Airport cache read error: {exc}', flush=True)
+
+load_local_cache()
+
 def lookup(code):
     global _loading, _last_attempt
     code = str(code or '').strip().upper()
