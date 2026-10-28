@@ -5,6 +5,7 @@ import math
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 BASE = Path(__file__).resolve().parent
@@ -56,9 +57,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
     def do_GET(self):
-        if self.path in ('/', '/index.html'):
+        path = urlsplit(self.path).path
+        if path in ('/', '/index.html'):
             self.send(200, (BASE/'index.html').read_bytes(), 'text/html; charset=utf-8')
-        elif self.path == '/api/live':
+        elif path == '/api/live':
             try:
                 output = live()
                 code = 200
@@ -66,6 +68,8 @@ class Handler(BaseHTTPRequestHandler):
                 output = {'error':str(e)}
                 code = 503
             self.send(code, json.dumps(output,separators=(',',':')).encode(), 'application/json')
+        elif path == '/favicon.ico':
+            self.send(204,b'','image/x-icon')
         else:
             self.send(404,b'Not found','text/plain; charset=utf-8')
     def log_message(self, fmt, *args):
