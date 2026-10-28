@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import urlopen, Request
+from airport_db import lookup as lookup_airport
 
 BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
@@ -119,7 +120,15 @@ def live():
         route = get_route(candidates[0])
         if route:
             route = dict(route)
+            origin_airport = lookup_airport(route.get('origin'))
+            dest_airport = lookup_airport(route.get('destination'))
+            if origin_airport and origin_airport.get('country'):
+                route['origin_country'] = origin_airport['country']
+            if dest_airport and dest_airport.get('country'):
+                route['destination_country'] = dest_airport['country']
             coords = route.pop('destination_coords', None)
+            if not coords and dest_airport and 'lat' in dest_airport and 'lon' in dest_airport:
+                coords = (dest_airport['lat'], dest_airport['lon'])
             if coords:
                 route['distance_to_destination_km'] = round(
                     distance_nm(candidates[0]['lat'], candidates[0]['lon'], coords[0], coords[1])*1.852,1)
