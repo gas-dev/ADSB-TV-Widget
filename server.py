@@ -20,6 +20,9 @@ ROUTES_URL = 'https://adsb.im/api/0/routeset'
 route_cache = {}
 route_lock = threading.Lock()
 last_route_request = 0.0
+ROUTE_RETRY_SECONDS = 45
+ROUTE_REFRESH_SECONDS = 600
+ROUTE_MIN_SPACING_SECONDS = 10
 
 def airport_coords(a):
     """Accept documented coordinate shapes only; never guess from airport code."""
@@ -60,10 +63,10 @@ def load_route(callsign, lat, lon):
                                    'provider':'adsb.im','estimated':True,
                                    'destination_coords':airport_coords(b)}
         with route_lock:
-            route_cache[callsign]=(time.monotonic()+(3600 if route else 300),route)
+            route_cache[callsign]=(time.monotonic()+(ROUTE_REFRESH_SECONDS if route else ROUTE_RETRY_SECONDS),route)
     except Exception:
         with route_lock:
-            route_cache[callsign]=(time.monotonic()+180,None)
+            route_cache[callsign]=(time.monotonic()+ROUTE_RETRY_SECONDS,None)
 
 def get_route(a):
     global last_route_request
@@ -75,10 +78,10 @@ def get_route(a):
         item=route_cache.get(callsign)
         if item and item[0]>now:
             return item[1]
-        if now-last_route_request<15:
+        if now-last_route_request<ROUTE_MIN_SPACING_SECONDS:
             return None
         last_route_request=now
-        route_cache[callsign]=(now+45,None)
+        route_cache[callsign]=(now+ROUTE_RETRY_SECONDS,None)
     threading.Thread(target=load_route,args=(callsign,a['lat'],a['lon']),daemon=True).start()
     return None
 
