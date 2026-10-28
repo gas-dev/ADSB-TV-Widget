@@ -7,7 +7,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 from urllib.request import urlopen, Request
 from airport_db import lookup as lookup_airport
 from photo_db import lookup as lookup_photo
@@ -164,7 +164,7 @@ class Handler(BaseHTTPRequestHandler):
             if len(code) != 6 or any(ch not in '0123456789abcdef' for ch in code):
                 self.send(400,b'{"error":"invalid hex"}','application/json')
             else:
-                self.send(200,json.dumps({'photo':lookup_photo(code)}).encode(),'application/json')
+                self.send(200,json.dumps({'photo':lookup_photo(code, parse_qs(urlsplit(self.path).query).get('reg',[''])[0])}).encode(),'application/json')
         elif path == '/favicon.ico':
             self.send(204,b'','image/x-icon')
         else:
