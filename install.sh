@@ -23,6 +23,7 @@ Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
 ProtectSystem=strict
+ReadWritePaths=/var/cache/adsb-tv
 ProtectHome=true
 PrivateTmp=true
 [Install]
