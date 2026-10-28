@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import urlopen, Request
 from airport_db import lookup as lookup_airport
+from photo_db import lookup as lookup_photo
 
 BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
@@ -158,6 +159,12 @@ class Handler(BaseHTTPRequestHandler):
                 output = {'error':str(e)}
                 code = 503
             self.send(code, json.dumps(output,separators=(',',':')).encode(), 'application/json')
+        elif path.startswith('/api/photo/'):
+            code = path[len('/api/photo/'):].lower()
+            if len(code) != 6 or any(ch not in '0123456789abcdef' for ch in code):
+                self.send(400,b'{"error":"invalid hex"}','application/json')
+            else:
+                self.send(200,json.dumps({'photo':lookup_photo(code)}).encode(),'application/json')
         elif path == '/favicon.ico':
             self.send(204,b'','image/x-icon')
         else:
