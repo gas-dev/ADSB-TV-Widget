@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from urllib.request import urlopen
 
-CACHE = Path('/home/pi/.cache/adsb-tv/airports.json')
+CACHE = Path('/var/cache/adsb-tv/airports.json')
 BASE_URL = 'https://davidmegginson.github.io/ourairports-data/'
 _lock = threading.Lock()
 _index = {}
