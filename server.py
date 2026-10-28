@@ -53,6 +53,8 @@ def load_route(callsign, lat, lon):
                         if origin and destination:
                             route={'origin':origin,'destination':destination,
                                    'origin_name':a.get('name'),'destination_name':b.get('name'),
+                                   'origin_country':a.get('country_name') or a.get('country'),
+                                   'destination_country':b.get('country_name') or b.get('country'),
                                    'provider':'adsb.im','estimated':True,
                                    'destination_coords':airport_coords(b)}
         with route_lock:
