@@ -16,7 +16,7 @@ BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
 PORT = int(os.environ.get('ADSB_TV_PORT', '8090'))
 
-ROUTES_URL = 'https://api.adsb.lol/api/0/routeset'
+ROUTES_URL = 'https://adsb.im/api/0/routeset'
 route_cache = {}
 route_lock = threading.Lock()
 last_route_request = 0.0
@@ -68,8 +68,8 @@ def load_route(callsign, lat, lon):
         if isinstance(rows,list):
             row = next((x for x in rows if isinstance(x,dict) and
                         str(x.get('callsign','')).strip().upper()==callsign), None)
-            if row and row.get('plausible') is True:
-                airports = row.get('_airports')
+            if row:
+                airports = row.get('_airports') or row.get('airports')
                 if isinstance(airports,list) and len(airports)>=2:
                     a,b = airports[0], airports[-1]
                     if isinstance(a,dict) and isinstance(b,dict):
@@ -81,6 +81,7 @@ def load_route(callsign, lat, lon):
                                    'origin_country':a.get('country_name') or a.get('country'),
                                    'destination_country':b.get('country_name') or b.get('country'),
                                    'provider':'adsb.im','estimated':True,
+                                   'plausible':row.get('plausible'),
                                    'destination_coords':airport_coords(b)}
         if not route:
             try:
