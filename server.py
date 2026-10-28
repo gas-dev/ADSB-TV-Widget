@@ -7,7 +7,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, quote
 from urllib.request import urlopen, Request
 from airport_db import lookup as lookup_airport
 from photo_db import lookup as lookup_photo
@@ -16,7 +16,7 @@ BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
 PORT = int(os.environ.get('ADSB_TV_PORT', '8090'))
 
-ROUTES_URL = 'https://adsb.im/api/0/routeset'
+ROUTES_URL = 'https://api.adsb.lol/api/0/routeset'
 route_cache = {}
 route_lock = threading.Lock()
 last_route_request = 0.0
@@ -36,6 +36,26 @@ def airport_coords(a):
     if isinstance(lat,(float,int)) and isinstance(lon,(float,int)) and -90 <= lat <= 90 and -180 <= lon <= 180:
         return (lat,lon)
     return None
+
+def route_from_adsbdb(callsign):
+    req = Request('https://api.adsbdb.com/v0/callsign/' + quote(callsign, safe=''),
+                  headers={'User-Agent':'ADSB-TV-Widget/1.4','Accept':'application/json'})
+    with urlopen(req, timeout=5) as response:
+        payload = json.load(response)
+    flight = (payload.get('response') or {}).get('flightroute') or {}
+    origin = flight.get('origin') or {}
+    destination = flight.get('destination') or {}
+    oc = origin.get('iata_code') or origin.get('icao_code')
+    dc = destination.get('iata_code') or destination.get('icao_code')
+    if not oc or not dc:
+        return None
+    coords = None
+    if isinstance(destination.get('latitude'),(float,int)) and isinstance(destination.get('longitude'),(float,int)):
+        coords = (destination['latitude'], destination['longitude'])
+    return {'origin':oc,'destination':dc,
+            'origin_name':origin.get('name'),'destination_name':destination.get('name'),
+            'origin_country':origin.get('country_name'),'destination_country':destination.get('country_name'),
+            'destination_coords':coords,'provider':'ADSBdb','estimated':True}
 
 def load_route(callsign, lat, lon):
     try:
@@ -62,11 +82,24 @@ def load_route(callsign, lat, lon):
                                    'destination_country':b.get('country_name') or b.get('country'),
                                    'provider':'adsb.im','estimated':True,
                                    'destination_coords':airport_coords(b)}
+        if not route:
+            try:
+                route = route_from_adsbdb(callsign)
+            except Exception as exc:
+                print('ADSBdb lookup failed:',callsign,str(exc),flush=True)
+        if not route:
+            print('Route unavailable:',callsign,flush=True)
         with route_lock:
             route_cache[callsign]=(time.monotonic()+(ROUTE_REFRESH_SECONDS if route else ROUTE_RETRY_SECONDS),route)
-    except Exception:
+    except Exception as exc:
+        print('Primary route lookup failed:',callsign,str(exc),flush=True)
+        try:
+            route = route_from_adsbdb(callsign)
+        except Exception as fallback_error:
+            print('Fallback route lookup failed:',callsign,str(fallback_error),flush=True)
+            route = None
         with route_lock:
-            route_cache[callsign]=(time.monotonic()+ROUTE_RETRY_SECONDS,None)
+            route_cache[callsign]=(time.monotonic()+(ROUTE_REFRESH_SECONDS if route else ROUTE_RETRY_SECONDS),route)
 
 def get_route(a):
     global last_route_request
