@@ -3,14 +3,67 @@
 import json
 import math
 import os
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 
 BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
 PORT = int(os.environ.get('ADSB_TV_PORT', '8090'))
+
+ROUTES_URL = 'https://adsb.im/api/0/routeset'
+route_cache = {}
+route_lock = threading.Lock()
+last_route_request = 0.0
+
+def load_route(callsign, lat, lon):
+    try:
+        payload = json.dumps({'planes':[{'callsign':callsign,'lat':lat,'lng':lon}]}).encode()
+        req = Request(ROUTES_URL, data=payload, headers={'Content-Type':'application/json',
+                    'Accept':'application/json','User-Agent':'ADSB-TV-Widget/1.1'}, method='POST')
+        with urlopen(req, timeout=6) as r:
+            rows = json.load(r)
+        route = None
+        if isinstance(rows,list):
+            row = next((x for x in rows if isinstance(x,dict) and
+                        str(x.get('callsign','')).strip().upper()==callsign), None)
+            if row and row.get('plausible') is True:
+                airports = row.get('_airports')
+                if isinstance(airports,list) and len(airports)>=2:
+                    a,b = airports[0], airports[-1]
+                    if isinstance(a,dict) and isinstance(b,dict):
+                        origin = a.get('iata') or a.get('icao')
+                        destination = b.get('iata') or b.get('icao')
+                        if origin and destination:
+                            route={'origin':origin,'destination':destination,
+                                   'origin_name':a.get('name'),'destination_name':b.get('name'),
+                                   'provider':'adsb.im','estimated':True}
+        with route_lock:
+            route_cache[callsign]=(time.monotonic()+(3600 if route else 300),route)
+    except Exception:
+        with route_lock:
+            route_cache[callsign]=(time.monotonic()+180,None)
+
+def get_route(a):
+    global last_route_request
+    callsign=str(a.get('flight') or '').strip().upper()
+    if not callsign or not isinstance(a.get('lat'),(int,float)) or not isinstance(a.get('lon'),(int,float)):
+        return None
+    now=time.monotonic()
+    with route_lock:
+        item=route_cache.get(callsign)
+        if item and item[0]>now:
+            return item[1]
+        if now-last_route_request<15:
+            return None
+        last_route_request=now
+        route_cache[callsign]=(now+45,None)
+    threading.Thread(target=load_route,args=(callsign,a['lat'],a['lon']),daemon=True).start()
+    return None
+
 
 def read_json(name):
     with urlopen(URL + name, timeout=2.5) as r:
@@ -46,6 +99,8 @@ def live():
         b['distance_km'] = round(km,1)
         candidates.append(b)
     candidates.sort(key=lambda a: a['distance_km'])
+    if candidates:
+        candidates[0]['route'] = get_route(candidates[0])
     return {'now':data.get('now'),'count':len(data.get('aircraft',[])),
             'positioned':len(candidates),'receiver':{'lat':lat0,'lon':lon0},
             'aircraft':candidates[:10], 'radius_km':100,'source':'local ADS-B readsb'}
