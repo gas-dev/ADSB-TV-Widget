@@ -19,6 +19,19 @@ route_cache = {}
 route_lock = threading.Lock()
 last_route_request = 0.0
 
+def airport_coords(a):
+    """Accept documented coordinate shapes only; never guess from airport code."""
+    if not isinstance(a, dict):
+        return None
+    loc = a.get('location')
+    if isinstance(loc, dict):
+        a = {**loc, **a}
+    lat = a.get('lat', a.get('latitude'))
+    lon = a.get('lon', a.get('lng', a.get('longitude')))
+    if isinstance(lat,(float,int)) and isinstance(lon,(float,int)) and -90 <= lat <= 90 and -180 <= lon <= 180:
+        return (lat,lon)
+    return None
+
 def load_route(callsign, lat, lon):
     try:
         payload = json.dumps({'planes':[{'callsign':callsign,'lat':lat,'lng':lon}]}).encode()
@@ -40,7 +53,8 @@ def load_route(callsign, lat, lon):
                         if origin and destination:
                             route={'origin':origin,'destination':destination,
                                    'origin_name':a.get('name'),'destination_name':b.get('name'),
-                                   'provider':'adsb.im','estimated':True}
+                                   'provider':'adsb.im','estimated':True,
+                                   'destination_coords':airport_coords(b)}
         with route_lock:
             route_cache[callsign]=(time.monotonic()+(3600 if route else 300),route)
     except Exception:
@@ -100,7 +114,14 @@ def live():
         candidates.append(b)
     candidates.sort(key=lambda a: a['distance_km'])
     if candidates:
-        candidates[0]['route'] = get_route(candidates[0])
+        route = get_route(candidates[0])
+        if route:
+            route = dict(route)
+            coords = route.pop('destination_coords', None)
+            if coords:
+                route['distance_to_destination_km'] = round(
+                    distance_nm(candidates[0]['lat'], candidates[0]['lon'], coords[0], coords[1])*1.852,1)
+        candidates[0]['route'] = route
     return {'now':data.get('now'),'count':len(data.get('aircraft',[])),
             'positioned':len(candidates),'receiver':{'lat':lat0,'lon':lon0},
             'aircraft':candidates[:10], 'radius_km':100,'source':'local ADS-B readsb'}
