@@ -13,28 +13,55 @@ main{padding:clamp(18px,3vw,52px);max-width:1920px;margin:auto}.top{display:flex
 </main><script>
 const el=id=>document.getElementById(id);let selected=null;const num=(n,d=0)=>typeof n==='number'&&Number.isFinite(n)?n.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d}):'--';const text=(v)=>v==null||v===''?'--':String(v).trim();
 let currentPhotoHex=null;
-async function updatePhoto(hex,reg){
+async function updatePhoto(hex,reg,icaoType){
  const code=(hex||'').toLowerCase();
- const photoKey=code+'|'+(reg||'');
- if(photoKey===currentPhotoHex)return;
- currentPhotoHex=photoKey;
+ const registration=(reg||'').trim();
+ const type=(icaoType||'').trim();
+ const key=code+'|'+registration+'|'+type;
+ if(key===currentPhotoHex)return;
+ currentPhotoHex=key;
  const img=el('aircraftPhoto'),empty=el('photoEmpty'),credit=el('photoCredit');
- img.style.display='none';img.removeAttribute('src');empty.style.display='block';empty.textContent='✈ Photo unavailable';credit.replaceChildren();
+ img.style.display='none';img.removeAttribute('src');empty.style.display='block';
+ empty.textContent='✈ Photo unavailable';credit.replaceChildren();
  if(!/^[0-9a-f]{6}$/.test(code))return;
- try {
-  const response=await fetch('/api/photo/'+code+'?reg='+encodeURIComponent(reg||''),{cache:'no-store'});
-  const data=await response.json();
-  if(currentPhotoHex!==photoKey||!data.photo?.url)return;
-  img.onload=()=>{if(currentPhotoHex===photoKey){img.style.display='block';empty.style.display='none'}};
-  img.onerror=()=>{img.style.display='none';empty.style.display='block'};
-  img.src=data.photo.url;
-  const link=document.createElement('a');
-  link.href=data.photo.link||'https://www.planespotters.net/';
-  link.target='_blank';link.rel='noopener noreferrer';
-  link.textContent=data.photo.photographer?'Photo © '+data.photo.photographer:'Photo: '+(data.photo.source||'source');
-  credit.appendChild(link);
+ const showPhoto=(photo)=>{
+   if(key!==currentPhotoHex||!photo?.url)return false;
+   const link=document.createElement('a');
+   const allowed=(url)=>{try{const u=new URL(url);return u.protocol==='https:'}catch(e){return false}};
+   if(!allowed(photo.url))return false;
+   img.onload=()=>{if(key===currentPhotoHex){img.style.display='block';empty.style.display='none'}};
+   img.onerror=()=>{if(key===currentPhotoHex){img.style.display='none';empty.style.display='block';empty.textContent='✈ Photo unavailable'}};
+   img.src=photo.url;
+   if(allowed(photo.link||'')){link.href=photo.link;link.target='_blank';link.rel='noopener noreferrer'}
+   link.textContent=photo.photographer?'Photo © '+photo.photographer:'Photo: '+(photo.source||'source');
+   credit.replaceChildren(link);
+   return true;
+ };
+ // Same browser-side request shape as tar1090. The backend remains the fallback.
+ let photo=null;
+ try{
+   const params=new URLSearchParams();
+   if(registration)params.set('reg',registration);
+   if(type)params.set('icaoType',type);
+   const u='https://api.planespotters.net/pub/photos/hex/'+code.toUpperCase()+(params.size?'?'+params:'');
+   const res=await fetch(u);
+   if(res.ok){
+     const payload=await res.json();
+     const p=(payload.photos||[])[0];
+     if(p){
+       const thumb=p.thumbnail;
+       const url=typeof thumb==='string'?thumb:thumb?.src;
+       photo={url,link:p.link,photographer:p.photographer||p.user,source:'Planespotters.net'};
+     }
+   }
+ }catch(e){}
+ if(key!==currentPhotoHex)return;
+ if(showPhoto(photo))return;
+ try{
+   const res=await fetch('/api/photo/'+code+'?reg='+encodeURIComponent(registration),{cache:'no-store'});
+   if(res.ok){const data=await res.json();showPhoto(data.photo)}
  }catch(e){}
 }
-async function refresh(){try{const r=await fetch('/api/live',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();const planes=data.aircraft||[];let p=planes[0];if(p){updatePhoto(p.hex,p.r);selected=p.hex;el('flight').textContent=text((p.flight||'').trim()||p.r||p.hex);el('model').textContent=text(p.desc||p.t||'Aeromobile non identificato');el('origin').textContent=text(p.route?.origin);el('destination').textContent=text(p.route?.destination);el('originName').textContent=p.route?.origin_name||'Airport unavailable';el('originCountry').textContent=p.route?.origin_country||'Country unavailable';el('destinationName').textContent=p.route?.destination_name||'Airport unavailable';el('destinationCountry').textContent=p.route?.destination_country||'Country unavailable';el('remaining').textContent=typeof p.route?.distance_to_destination_km==='number'?num(p.route.distance_to_destination_km,1):'N/D';el('remainingUnit').textContent=typeof p.route?.distance_to_destination_km==='number'?'km':'';el('routeinfo').textContent=p.route?'Rotta stimata · '+text(p.route.origin_name)+' → '+text(p.route.destination_name)+' · '+text(p.route.provider):'Partenza e destinazione non disponibili o in verifica';el('distance').textContent=num(p.distance_km,1);el('speed').textContent=num(typeof p.gs==='number'?p.gs*1.852:null);el('altitude').textContent=num(typeof p.alt_baro==='number'?p.alt_baro*.3048:null);el('track').textContent=num(p.track);el('reg').textContent=text(p.r);el('type').textContent=text(p.t);el('vertical').textContent=num(typeof p.baro_rate==='number'?p.baro_rate*.3048:null);el('squawk').textContent=text(p.squawk);const target=el('target');const bearingDeg=typeof p.r_dir==='number'?p.r_dir:null;const headingDeg=typeof p.track==='number'?p.track:typeof p.true_heading==='number'?p.true_heading:null;if(bearingDeg===null){target.style.display='none'}else{target.style.display='block';const angle=bearingDeg*Math.PI/180;const radius=Math.max(0,Math.min(100,p.distance_km||0))/100*44;target.style.left=(50+Math.sin(angle)*radius)+'%';target.style.top=(50-Math.cos(angle)*radius)+'%';target.style.transform='translate(-50%,-50%) rotate('+(headingDeg??0)+'deg)'}}else{updatePhoto(null);selected=null;el('origin').textContent='N/D';el('destination').textContent='N/D';el('originName').textContent='Airport unavailable';el('originCountry').textContent='Country unavailable';el('destinationName').textContent='Airport unavailable';el('destinationCountry').textContent='Country unavailable';el('routeinfo').textContent='Nessun volo selezionato';el('remaining').textContent='N/D';el('remainingUnit').textContent='';el('flight').textContent='NESSUN AEREO';el('model').textContent='Nessun aeromobile entro 100 km con posizione recente';for(const id of ['distance','speed','altitude','track','reg','type','vertical','squawk'])el(id).textContent='--'}el('stats').textContent=data.count+' aeromobili ricevuti · '+data.positioned+' entro 100 km';el('status').textContent='LIVE';el('updated').textContent='Aggiornato '+new Date().toLocaleTimeString('it-IT')}catch(e){el('status').textContent='OFFLINE';el('flight').textContent='DATI NON DISPONIBILI';el('model').textContent='Controllare collegamento al feeder';el('stats').textContent='Errore di lettura: '+e.message}}
+async function refresh(){try{const r=await fetch('/api/live',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();const planes=data.aircraft||[];let p=planes[0];if(p){updatePhoto(p.hex,p.r,p.t);selected=p.hex;el('flight').textContent=text((p.flight||'').trim()||p.r||p.hex);el('model').textContent=text(p.desc||p.t||'Aeromobile non identificato');el('origin').textContent=text(p.route?.origin);el('destination').textContent=text(p.route?.destination);el('originName').textContent=p.route?.origin_name||'Airport unavailable';el('originCountry').textContent=p.route?.origin_country||'Country unavailable';el('destinationName').textContent=p.route?.destination_name||'Airport unavailable';el('destinationCountry').textContent=p.route?.destination_country||'Country unavailable';el('remaining').textContent=typeof p.route?.distance_to_destination_km==='number'?num(p.route.distance_to_destination_km,1):'N/D';el('remainingUnit').textContent=typeof p.route?.distance_to_destination_km==='number'?'km':'';el('routeinfo').textContent=p.route?'Rotta stimata · '+text(p.route.origin_name)+' → '+text(p.route.destination_name)+' · '+text(p.route.provider):'Partenza e destinazione non disponibili o in verifica';el('distance').textContent=num(p.distance_km,1);el('speed').textContent=num(typeof p.gs==='number'?p.gs*1.852:null);el('altitude').textContent=num(typeof p.alt_baro==='number'?p.alt_baro*.3048:null);el('track').textContent=num(p.track);el('reg').textContent=text(p.r);el('type').textContent=text(p.t);el('vertical').textContent=num(typeof p.baro_rate==='number'?p.baro_rate*.3048:null);el('squawk').textContent=text(p.squawk);const target=el('target');const bearingDeg=typeof p.r_dir==='number'?p.r_dir:null;const headingDeg=typeof p.track==='number'?p.track:typeof p.true_heading==='number'?p.true_heading:null;if(bearingDeg===null){target.style.display='none'}else{target.style.display='block';const angle=bearingDeg*Math.PI/180;const radius=Math.max(0,Math.min(100,p.distance_km||0))/100*44;target.style.left=(50+Math.sin(angle)*radius)+'%';target.style.top=(50-Math.cos(angle)*radius)+'%';target.style.transform='translate(-50%,-50%) rotate('+(headingDeg??0)+'deg)'}}else{updatePhoto(null);selected=null;el('origin').textContent='N/D';el('destination').textContent='N/D';el('originName').textContent='Airport unavailable';el('originCountry').textContent='Country unavailable';el('destinationName').textContent='Airport unavailable';el('destinationCountry').textContent='Country unavailable';el('routeinfo').textContent='Nessun volo selezionato';el('remaining').textContent='N/D';el('remainingUnit').textContent='';el('flight').textContent='NESSUN AEREO';el('model').textContent='Nessun aeromobile entro 100 km con posizione recente';for(const id of ['distance','speed','altitude','track','reg','type','vertical','squawk'])el(id).textContent='--'}el('stats').textContent=data.count+' aeromobili ricevuti · '+data.positioned+' entro 100 km';el('status').textContent='LIVE';el('updated').textContent='Aggiornato '+new Date().toLocaleTimeString('it-IT')}catch(e){el('status').textContent='OFFLINE';el('flight').textContent='DATI NON DISPONIBILI';el('model').textContent='Controllare collegamento al feeder';el('stats').textContent='Errore di lettura: '+e.message}}
 refresh();setInterval(refresh,1000);
 </script></body></html>
