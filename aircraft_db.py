@@ -1,4 +1,4 @@
-"""Optional free, cached aircraft metadata. Never provides live positions."""
+"""Free supplementary aircraft metadata, cached and loaded off the ADS-B request path."""
 import json
 import threading
 import time
@@ -8,33 +8,42 @@ _lock=threading.Lock()
 _cache={}
 _last_request=0.0
 FIELDS=('registration','manufacturer','type','registered_owner','registered_owner_country_name','operator_flag_code','source')
+
 def _load(hexcode):
-    data=None
+    data={}
+    providers=[]
     for source,url in (
         ('HexDB','https://hexdb.io/api/v2/aircraft/'+hexcode),
         ('ADSBdb','https://api.adsbdb.com/v0/aircraft/'+hexcode),
     ):
         try:
-            req=Request(url,headers={'User-Agent':'ADSB-TV-Widget/2.0','Accept':'application/json'})
+            req=Request(url,headers={'User-Agent':'ADSB-TV-Widget/2.1','Accept':'application/json'})
             with urlopen(req,timeout=5) as response:
                 obj=json.load(response)
+            if not isinstance(obj,dict):
+                continue
             if source=='ADSBdb':
                 obj=(obj.get('response') or {}).get('aircraft') or {}
-                candidate={
-                    'registration':obj.get('registration'),'manufacturer':obj.get('manufacturer'),
-                    'type':obj.get('type'),'registered_owner':obj.get('registered_owner'),
-                    'registered_owner_country_name':obj.get('registered_owner_country_name'),
-                    'operator_flag_code':obj.get('registered_owner_operator_flag_code'),'source':source}
-            else:
-                candidate={k:obj.get(k) for k in FIELDS if k!='source'}
-                candidate['source']=source
-            if any(candidate.get(k) for k in ('registration','manufacturer','registered_owner')):
-                data={k:v for k,v in candidate.items() if k in FIELDS and isinstance(v,str) and v.strip()}
-                break
+                if not isinstance(obj,dict): continue
+            candidate={
+                'registration':obj.get('registration'),
+                'manufacturer':obj.get('manufacturer'),
+                'type':obj.get('type'),
+                'registered_owner':obj.get('registered_owner'),
+                'registered_owner_country_name':obj.get('registered_owner_country_name'),
+                'operator_flag_code':obj.get('operator_flag_code') or obj.get('registered_owner_operator_flag_code')
+            }
+            used=False
+            for key,value in candidate.items():
+                if key not in data and isinstance(value,str) and value.strip():
+                    data[key]=value.strip()
+                    used=True
+            if used: providers.append(source)
         except Exception as exc:
             print('Aircraft metadata lookup failed:',source,hexcode,str(exc),flush=True)
+    if data: data['source']=', '.join(providers)
     with _lock:
-        _cache[hexcode]=(time.monotonic()+(86400 if data else 3600),data)
+        _cache[hexcode]=(time.monotonic()+(86400 if data else 300),data or None)
 
 def lookup(hexcode):
     global _last_request
@@ -44,8 +53,8 @@ def lookup(hexcode):
     with _lock:
         cached=_cache.get(code)
         if cached and cached[0]>now: return cached[1]
-        if now-_last_request<3: return None
+        if now-_last_request<2: return None
         _last_request=now
-        _cache[code]=(now+45,None)
+        _cache[code]=(now+30,None)
     threading.Thread(target=_load,args=(code,),daemon=True).start()
     return None
