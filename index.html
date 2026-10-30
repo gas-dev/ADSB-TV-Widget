@@ -160,9 +160,10 @@ function showPlane(p){
  updatePhoto(p.hex,p.r,p.t);
  const r=p.route||{};
  el('flight').textContent=text((p.flight||'').trim()||p.r||p.hex);
- el('model').textContent=text(p.desc||p.metadata?.type||p.t||'Aeromobile non identificato');
  const meta=p.metadata||{};
- el('aircraftDetails').textContent=[meta.manufacturer,meta.registered_owner,meta.registered_owner_country_name].filter(Boolean).join(' · ');
+ el('model').textContent=text(meta.type||p.desc||p.t||'Aeromobile non identificato');
+ const details=[meta.manufacturer,meta.registered_owner?('Proprietario: '+meta.registered_owner):null,meta.registered_owner_country_name].filter(Boolean);
+ el('aircraftDetails').textContent=details.length?details.join(' · '):'Informazioni aggiuntive non disponibili';
  el('origin').textContent=text(r.origin);el('destination').textContent=text(r.destination);
  el('originName').textContent=r.origin_name||'Airport unavailable';
  el('originCountry').textContent=r.origin_country||'Country unavailable';
