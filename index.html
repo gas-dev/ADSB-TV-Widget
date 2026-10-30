@@ -51,6 +51,26 @@ main{padding:clamp(18px,3vw,52px);max-width:1920px;margin:auto}.top{display:flex
  .route{margin-top:5px}
  .route .muted{font-size:11px}
 }
+
+/* Larger, readable aircraft information while keeping the TV viewport fixed. */
+@media (min-width:1000px) and (min-height:560px) and (orientation:landscape){
+ .hero>.panel:first-child{display:flex;flex-direction:column;justify-content:flex-start}
+ .flight-info h1{font-size:clamp(62px,5.8vw,112px);line-height:1.02}
+ .flight-info h2{font-size:clamp(23px,1.85vw,36px);line-height:1.14;overflow-wrap:anywhere}
+ .flight-header{grid-template-columns:minmax(0,1fr) clamp(120px,12vw,200px)}
+ .hero>.panel:first-child>.big{font-size:clamp(66px,7.8vh,110px);margin:7px 0 10px}
+ .hero>.panel:first-child>.route strong{font-size:clamp(30px,2.6vw,49px)}
+ .hero>.panel:first-child>.route .muted{font-size:clamp(14px,1.16vw,21px)}
+ .hero>.panel:first-child>.value{font-size:clamp(35px,4.2vh,58px)}
+ .hero>.panel:first-child>p.muted{font-size:clamp(12px,1vw,17px)}
+}
+@media (min-width:1000px) and (min-height:560px) and (max-height:760px) and (orientation:landscape){
+ .flight-info h1{font-size:clamp(54px,4.8vw,82px)}
+ .flight-info h2{font-size:clamp(18px,1.5vw,27px)}
+ .hero>.panel:first-child>.big{font-size:clamp(55px,7vh,84px)}
+ .hero>.panel:first-child>.route strong{font-size:clamp(25px,2.25vw,39px)}
+ .hero>.panel:first-child>.route .muted{font-size:clamp(12px,1vw,17px)}
+}
 </style></head><body><main>
 <header class="top"><div><div class="brand">✈ ADSB TV <span style="color:#5ddcd6">/ RADAR LIVE</span></div><div class="sub" style="margin-top:8px">Stazione IU0VESADSBKAS01</div></div><div class="top-right-tools"><a href="/setup" style="color:#9bdaf0;text-decoration:none;font-weight:700">⚙ Setup</a><div class="rotate-timer" id="rotateTimer" title="Tempo al prossimo aereo"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="bg" cx="18" cy="18" r="14"/><circle class="fg" id="rotateProgress" cx="18" cy="18" r="14"/></svg></div><span class="pill"><span class="dot"></span><span id="status">IN ATTESA</span></span></div></header>
 <section class="hero"><article class="panel"><div class="sub">Aeromobile più vicino alla tua antenna</div><div class="flight-header"><div class="flight-info"><h1 id="flight">RICERCA...</h1><h2 id="model">In attesa di dati ADS-B</h2></div><div class="photo-column"><div class="aircraft-photo"><img id="aircraftPhoto" alt="Aircraft photo"><span class="muted" id="photoEmpty">✈ Photo unavailable</span></div><div class="photo-credit" id="photoCredit"></div></div></div><div class="sub">Distanza orizzontale</div><div class="big"><span id="distance">--</span> <span class="unit">km</span></div><div class="route"><div><div class="sub">Partenza</div><strong id="origin">N/D</strong><div class="muted" id="originName">Airport unavailable</div><div class="muted" id="originCountry">Country unavailable</div></div><div class="arrow">✈ →</div><div style="text-align:right"><div class="sub">Destinazione</div><strong id="destination">N/D</strong><div class="muted" id="destinationName">Airport unavailable</div><div class="muted" id="destinationCountry">Country unavailable</div></div></div><div class="sub" style="margin-top:24px">Distanza diretta alla destinazione</div><div class="value"><span id="remaining">N/D</span> <small id="remainingUnit"></small></div><p class="muted" style="margin:20px 0 0"><span id="routeinfo">Rotta stimata da fonte esterna quando disponibile.</span></p></article>
