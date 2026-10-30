@@ -80,7 +80,7 @@ main{padding:clamp(18px,3vw,52px);max-width:1920px;margin:auto}.top{display:flex
 <article class="panel radar-panel"><div class="sub" data-i18n="radar">Rilevamento · posizione relativa</div><div class="radar-wrap" style="margin-top:12px"><div class="radar"><span class="compass north">N</span><span class="compass east">E</span><span class="compass south">S</span><span class="compass west">W</span><div class="ring-label" id="midRange">50 km</div><div class="center"></div><div id="radarTargets"></div></div><div class="radartext"><span id="maxRange">100 km</span> <span id="radarDirection">TO EDGE · NORTH UP</span></div></div></article></section>
 <section class="cards"><article class="panel"><div class="sub" data-i18n="speed">Velocità al suolo</div><div class="value"><span id="speed">--</span> <small>km/h</small></div></article><article class="panel"><div class="sub" data-i18n="altitude">Quota barometrica</div><div class="value"><span id="altitude">--</span> <small>m</small></div></article><article class="panel"><div class="sub" data-i18n="track">Rotta rispetto al nord</div><div class="value"><span id="track">--</span> <small>°</small></div></article></section>
 <section class="bottom"><article class="panel"><div class="sub" data-i18n="registration">Matricola</div><div class="value" id="reg">--</div></article><article class="panel"><div class="sub" data-i18n="type">Tipo ICAO</div><div class="value" id="type">--</div></article><article class="panel"><div class="sub" data-i18n="vertical">Velocità verticale</div><div class="value"><span id="vertical">--</span> <small>m/min</small></div></article><article class="panel"><div class="sub" data-i18n="squawk">Codice transponder</div><div class="value" id="squawk">--</div></article></section>
-<footer><span id="stats">In connessione al ricevitore...</span><span id="updated">Aggiornamento ogni secondo</span><span>Fonte: ADS-B locale / readsb</span></footer>
+<footer><span id="stats">In connessione al ricevitore...</span><span id="updated">Aggiornamento ogni secondo</span><span id="sourceLabel">Source: local ADS-B / readsb</span></footer>
 </main><script>
 const LANG={
 en:['Aircraft currently on display','Horizontal distance','Departure','Destination','Direct distance to destination','Relative position · north up','Ground speed','Barometric altitude','Ground track','Registration','ICAO type','Vertical speed','Squawk','Theoretical arrival','Estimated remaining time','No additional aircraft information','No aircraft','No aircraft in configured range','No flight selected','Route unavailable','Estimated route','received','shown within','next aircraft in','Last update','TO EDGE · NORTH UP','Owner'],
@@ -93,7 +93,7 @@ ru:['Отображаемый самолёт','Расстояние по гор�
 const LABEL_KEYS=['aircraft','horizontal','origin','destination','remaining','radar','speed','altitude','track','registration','type','vertical','squawk','eta','duration'];
 let currentSettings={language:'en',distance_unit:'km',speed_unit:'kmh',altitude_unit:'m',time_format:'24h',rotation_seconds:10};
 const tr=i=>(LANG[currentSettings.language]||LANG.en)[i];
-function renderLabels(){document.documentElement.lang=currentSettings.language;document.querySelectorAll('[data-i18n]').forEach(node=>{const pos=LABEL_KEYS.indexOf(node.dataset.i18n);if(pos>=0)node.textContent=tr(pos)})}
+function renderLabels(){document.documentElement.lang=currentSettings.language;const src=document.getElementById('sourceLabel');if(src)src.textContent=({en:'Source: local ADS-B / readsb',it:'Fonte: ADS-B locale / readsb',es:'Fuente: ADS-B local / readsb',fr:'Source : ADS-B local / readsb',de:'Quelle: lokales ADS-B / readsb',ru:'Источник: локальный ADS-B / readsb'}[currentSettings.language]||'Source: local ADS-B / readsb');document.querySelectorAll('[data-i18n]').forEach(node=>{const pos=LABEL_KEYS.indexOf(node.dataset.i18n);if(pos>=0)node.textContent=tr(pos)})}
 function convertDistance(km){const unit=currentSettings.distance_unit;return {value:km*(unit==='nm'?1/1.852:unit==='mi'?1/1.609344:1),unit:unit==='nm'?'NM':unit==='mi'?'mi':'km'}}
 function convertSpeed(knots){const u=currentSettings.speed_unit;return {value:knots*(u==='kmh'?1.852:u==='mph'?1.150779448:1),unit:u==='kmh'?'km/h':u==='mph'?'mph':'kt'}}
 function convertAltitude(feet){const u=currentSettings.altitude_unit;return {value:feet*(u==='m'?.3048:1),unit:u==='m'?'m':'ft'}}
@@ -178,7 +178,7 @@ function formatEta(distanceKm, speedKnots){
  if(!Number.isFinite(hours)||hours<0||hours>24)return null;
  const minutes=Math.ceil(hours*60);
  const estimated=new Date(Date.now()+minutes*60000);
- return {clock:estimated.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',hour12:currentSettings.time_format==='12h'}),duration:minutes>=60?Math.floor(minutes/60)+' h '+String(minutes%60).padStart(2,'0')+' min':minutes+' min'};
+ return {clock:estimated.toLocaleTimeString(currentSettings.language,{hour:'2-digit',minute:'2-digit',hour12:currentSettings.time_format==='12h'}),duration:minutes>=60?Math.floor(minutes/60)+' h '+String(minutes%60).padStart(2,'0')+' min':minutes+' min'};
 }
 function showPlane(p){
  updatePhoto(p.hex,p.r,p.t);
@@ -201,10 +201,10 @@ function showPlane(p){
  if(typeof p.ias==='number')extras.push('IAS '+num(convertSpeed(p.ias).value)+' '+convertSpeed(p.ias).unit);
  if(typeof p.mach==='number')extras.push('Mach '+num(p.mach,2));
  const selectedAlt=typeof p.nav_altitude_fms==='number'?p.nav_altitude_fms:p.nav_altitude_mcp;
- if(typeof selectedAlt==='number')extras.push('Quota selezionata '+num(convertAltitude(selectedAlt).value)+' '+currentSettings.altitude_unit);
- if(typeof p.baro_rate==='number')extras.push(p.baro_rate>100?'In salita':p.baro_rate< -100?'In discesa':'Quota stabile');
+ if(typeof selectedAlt==='number')extras.push(({en:'Selected altitude',it:'Quota selezionata',es:'Altitud seleccionada',fr:'Altitude sélectionnée',de:'Gewählte Höhe',ru:'Заданная высота'}[currentSettings.language]||'Selected altitude')+' '+num(convertAltitude(selectedAlt).value)+' '+currentSettings.altitude_unit);
+ if(typeof p.baro_rate==='number')extras.push(({en:['Climbing','Descending','Level'],it:['In salita','In discesa','Quota stabile'],es:['Ascendiendo','Descendiendo','Vuelo nivelado'],fr:['En montée','En descente','En palier'],de:['Steigend','Sinkend','Horizontalflug'],ru:['Набор высоты','Снижение','Горизонтальный полёт']}[currentSettings.language]||['Climbing','Descending','Level'])[p.baro_rate>100?0:p.baro_rate< -100?1:2]);
  el('liveExtras').textContent=extras.join(' · ');
- el('routeinfo').textContent=p.route?tr(20)+' · '+text(r.origin_name)+' → '+text(r.destination_name)+' · '+text(r.provider) :tr(19);
+ el('routeinfo').textContent=p.route?tr(20)+' · '+text(r.origin_name)+' → '+text(r.destination_name)+' · '+text(r.provider):tr(19);
  el('distance').textContent=num(convertDistance(p.distance_km).value,1);document.querySelector('.big .unit').textContent=convertDistance(p.distance_km).unit;
  el('speed').textContent=num(typeof p.gs==='number'?convertSpeed(p.gs).value:null);el('speed').nextElementSibling.textContent=convertSpeed(0).unit;
  el('altitude').textContent=num(typeof p.alt_baro==='number'?convertAltitude(p.alt_baro).value:null);el('altitude').nextElementSibling.textContent=currentSettings.altitude_unit;
@@ -255,5 +255,5 @@ async function refresh(){
   el('stats').textContent='Errore di lettura: '+e.message;
  }finally{loading=false}
 }
-refresh();setInterval(refresh,1000);
+renderLabels();refresh();setInterval(refresh,1000);
 </script></body></html>
