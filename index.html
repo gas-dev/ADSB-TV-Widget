@@ -228,7 +228,7 @@ async function refresh(){
  try{
   const response=await fetch('/api/live',{cache:'no-store'});
   if(!response.ok)throw Error('HTTP '+response.status);
-  const data=await response.json(),planes=data.aircraft||[],now=Date.now();if(data.settings){const previous=currentSettings;currentSettings=data.settings;ROTATION_MS=currentSettings.rotation_seconds*1000;renderLabels();if(el('radarDirection'))el('radarDirection').textContent=tr(26-1);if(previous.rotation_seconds!==currentSettings.rotation_seconds)shownAt=now}
+  const data=await response.json(),planes=data.aircraft||[],now=Date.now();if(data.settings){const previous=currentSettings;currentSettings=data.settings;ROTATION_MS=currentSettings.rotation_seconds*1000;renderLabels();if(el('radarDirection'))el('radarDirection').textContent=tr(25);if(previous.rotation_seconds!==currentSettings.rotation_seconds)shownAt=now}
   const group=planes.map(p=>p.hex).join(',');
   if(group!==lastGroup){
     if(currentAircraft){const newIndex=planes.findIndex(p=>p.hex===currentAircraft);if(newIndex>=0)rotationIndex=newIndex;else{rotationIndex=0;shownAt=now}}
@@ -247,9 +247,9 @@ async function refresh(){
   }else{rotationIndex=0;shownAt=0;lastGroup='';emptyDisplay()}
   rotationPlaneCount=planes.length;
   drawRadar(planes,currentAircraft,data.radius_km||100);
-  const range=convertDistance(data.radius_km||100);el('stats').textContent=data.count+' '+tr(22)+' · '+planes.length+' '+tr(23)+' '+num(range.value,0)+' '+range.unit+(planes.length>1?' · '+currentSettings.rotation_seconds+' s':'');
+  const range=convertDistance(data.radius_km||100);el('stats').textContent=data.count+' '+tr(21)+' · '+planes.length+' '+tr(22)+' '+num(range.value,0)+' '+range.unit+(planes.length>1?' · '+currentSettings.rotation_seconds+' s':'');
   el('status').textContent='LIVE';
-  el('updated').textContent=tr(25)+' '+new Date().toLocaleTimeString(currentSettings.language,{hour12:currentSettings.time_format==='12h'});
+  el('updated').textContent=tr(24)+' '+new Date().toLocaleTimeString(currentSettings.language,{hour12:currentSettings.time_format==='12h'});
  }catch(e){
   el('status').textContent='OFFLINE';
   el('stats').textContent='Errore di lettura: '+e.message;
