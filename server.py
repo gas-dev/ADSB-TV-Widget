@@ -11,6 +11,7 @@ from urllib.parse import urlsplit, parse_qs, quote
 from urllib.request import urlopen, Request
 from airport_db import lookup as lookup_airport
 from photo_db import lookup as lookup_photo
+from aircraft_db import lookup as lookup_aircraft_metadata
 
 BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
@@ -178,6 +179,7 @@ def live():
     candidates.sort(key=lambda a: a['distance_km'])
     candidates=candidates[:settings['aircraft_count']]
     for aircraft in candidates:
+        aircraft['metadata'] = lookup_aircraft_metadata(aircraft.get('hex'))
         route = get_route(aircraft)
         if route:
             route = dict(route)
