@@ -8,6 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs, quote
+import ipaddress
 from urllib.request import urlopen, Request
 from airport_db import lookup as lookup_airport
 from photo_db import lookup as lookup_photo
@@ -18,21 +19,38 @@ URL = 'http://127.0.0.1:8080/data/'
 PORT = int(os.environ.get('ADSB_TV_PORT', '8090'))
 
 SETTINGS_FILE = Path('/var/cache/adsb-tv/settings.json')
-DEFAULT_SETTINGS = {'radius_km':100,'aircraft_count':1}
+DEFAULT_SETTINGS = {'radius_km':100,'aircraft_count':1,'language':'en','feeder_host':'127.0.0.1','feeder_port':8080,'distance_unit':'km','speed_unit':'kmh','altitude_unit':'m','time_format':'24h','rotation_seconds':10}
 settings_lock=threading.Lock()
 def validate_settings(data):
     if not isinstance(data,dict): raise ValueError('Expected settings object')
-    radius=data.get('radius_km',100)
-    count=data.get('aircraft_count',1)
+    candidate={**DEFAULT_SETTINGS,**data}
+    radius=candidate['radius_km']; count=candidate['aircraft_count']
     if type(radius) not in (int,float) or not math.isfinite(radius) or not 1<=radius<=500: raise ValueError('radius_km must be 1 to 500')
     if type(count)!=int or not 1<=count<=20: raise ValueError('aircraft_count must be 1 to 20')
-    return {'radius_km':round(radius,1),'aircraft_count':count}
+    if candidate['language'] not in ('en','it','es','fr','de','ru'): raise ValueError('Unsupported language')
+    host=candidate['feeder_host']
+    if not isinstance(host,str) or len(host)>253 or not host: raise ValueError('Invalid feeder host')
+    # Accept literal IPv4/IPv6 or a safe DNS hostname, never URLs or paths.
+    try: ipaddress.ip_address(host)
+    except ValueError:
+        if not all(part and len(part)<=63 and part[0].isalnum() and part[-1].isalnum() and all(ch.isalnum() or ch=='-' for ch in part) for part in host.split('.')):
+            raise ValueError('Invalid feeder hostname')
+    port=candidate['feeder_port']
+    if type(port)!=int or not 1<=port<=65535: raise ValueError('Invalid feeder port')
+    for key,values in {'distance_unit':('km','nm','mi'),'speed_unit':('kmh','kt','mph'),'altitude_unit':('m','ft'),'time_format':('24h','12h')}.items():
+        if candidate[key] not in values: raise ValueError('Invalid '+key)
+    sec=candidate['rotation_seconds']
+    if type(sec)!=int or not 5<=sec<=60: raise ValueError('rotation_seconds must be 5 to 60')
+    candidate['radius_km']=round(radius,1)
+    return {k:candidate[k] for k in DEFAULT_SETTINGS}
 def read_settings():
-    try: return validate_settings(json.loads(SETTINGS_FILE.read_text()))
-    except (OSError,ValueError,TypeError): return dict(DEFAULT_SETTINGS)
+    with settings_lock:
+        try: return validate_settings(json.loads(SETTINGS_FILE.read_text()))
+        except (OSError,ValueError,TypeError): return dict(DEFAULT_SETTINGS)
 def write_settings(data):
     with settings_lock:
         settings=validate_settings(data)
+        SETTINGS_FILE.parent.mkdir(parents=True,exist_ok=True)
         temp=SETTINGS_FILE.with_suffix('.tmp')
         temp.write_text(json.dumps(settings))
         os.replace(temp,SETTINGS_FILE)
@@ -142,8 +160,11 @@ def get_route(a):
     return None
 
 
-def read_json(name):
-    with urlopen(URL + name, timeout=2.5) as r:
+def read_json(name, settings):
+    host=settings['feeder_host']
+    if ':' in host: host='['+host+']'
+    url='http://'+host+':'+str(settings['feeder_port'])+'/data/'+name
+    with urlopen(Request(url,headers={'User-Agent':'ADSB-TV-Widget/2.3'}), timeout=2.5) as r:
         return json.load(r)
 
 def distance_nm(a, b, c, d):
@@ -155,10 +176,10 @@ def distance_nm(a, b, c, d):
     return 2*r*math.asin(min(1.0, math.sqrt(h)))
 
 def live():
-    data = read_json('aircraft.json')
-    receiver = read_json('receiver.json')
-    lat0, lon0 = receiver.get('lat'), receiver.get('lon')
     settings=read_settings()
+    data = read_json('aircraft.json',settings)
+    receiver = read_json('receiver.json',settings)
+    lat0, lon0 = receiver.get('lat'), receiver.get('lon')
     candidates = []
     for a in data.get('aircraft', []):
         if not isinstance(a.get('lat'), (int,float)) or not isinstance(a.get('lon'),(int,float)):
@@ -198,7 +219,7 @@ def live():
         aircraft['route'] = route
     return {'now':data.get('now'),'count':len(data.get('aircraft',[])),
             'positioned':len(candidates),'receiver':{'lat':lat0,'lon':lon0},
-            'aircraft':candidates, 'radius_km':settings['radius_km'], 'aircraft_count':settings['aircraft_count'], 'source':'local ADS-B readsb'}
+            'aircraft':candidates, 'radius_km':settings['radius_km'], 'aircraft_count':settings['aircraft_count'], 'settings':settings, 'source':'local ADS-B readsb'}
 
 class Handler(BaseHTTPRequestHandler):
     def send(self, code, body, mime):
