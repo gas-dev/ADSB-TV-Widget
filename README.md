@@ -65,3 +65,9 @@ To test: `curl -s http://127.0.0.1:8090/api/settings`. The setup page writes set
 For aircraft actually received by the local antenna, the server asynchronously looks up HexDB (with ADSBdb as fallback) using the ICAO24 hex. It caches successful lookups for 24 hours and missing lookups for one hour, throttles new requests, and never substitutes external positions for local ADS-B. When supplied by the external database, the TV shows manufacturer, registered owner, owner country and a more detailed type as fallback. Owner is a registered owner, **not necessarily the airline or operator of the current flight**. Empty values are omitted, not guessed. The service is optional: the TV continues to work offline.
 
 Upgrade existing devices with `sudo install -m 644 server.py index.html setup.html airport_db.py photo_db.py aircraft_db.py /opt/adsb-tv/` and restart `adsb-tv`.
+
+## Multilingual setup and feeder configuration
+
+The /setup page offers English (default), Italian, Spanish, French, German and Russian. Set feeder IP/hostname and HTTP port (defaults 127.0.0.1:8080), radar radius (1–500 km), closest-aircraft count (1–20), display interval (5–60 seconds), distance (km, nautical miles, statute miles), speed (km/h, knots, mph), altitude (metres, feet), and clock format (12h, 24h). The configuration persists in /var/cache/adsb-tv/settings.json, retaining existing radius and count settings when migrating older versions. The feeder must expose /data/aircraft.json and /data/receiver.json. Port 8090's setup API has no password, so keep it accessible only on a trusted LAN.
+
+Upgrade: git pull --ff-only, then install server.py, index.html, setup.html, airport_db.py, photo_db.py, aircraft_db.py into /opt/adsb-tv/ and restart adsb-tv.
