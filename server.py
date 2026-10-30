@@ -16,6 +16,27 @@ BASE = Path(__file__).resolve().parent
 URL = 'http://127.0.0.1:8080/data/'
 PORT = int(os.environ.get('ADSB_TV_PORT', '8090'))
 
+SETTINGS_FILE = Path('/var/cache/adsb-tv/settings.json')
+DEFAULT_SETTINGS = {'radius_km':100,'aircraft_count':1}
+settings_lock=threading.Lock()
+def validate_settings(data):
+    if not isinstance(data,dict): raise ValueError('Expected settings object')
+    radius=data.get('radius_km',100)
+    count=data.get('aircraft_count',1)
+    if type(radius) not in (int,float) or not math.isfinite(radius) or not 1<=radius<=500: raise ValueError('radius_km must be 1 to 500')
+    if type(count)!=int or not 1<=count<=20: raise ValueError('aircraft_count must be 1 to 20')
+    return {'radius_km':round(radius,1),'aircraft_count':count}
+def read_settings():
+    try: return validate_settings(json.loads(SETTINGS_FILE.read_text()))
+    except (OSError,ValueError,TypeError): return dict(DEFAULT_SETTINGS)
+def write_settings(data):
+    with settings_lock:
+        settings=validate_settings(data)
+        temp=SETTINGS_FILE.with_suffix('.tmp')
+        temp.write_text(json.dumps(settings))
+        os.replace(temp,SETTINGS_FILE)
+    return settings
+
 ROUTES_URL = 'https://adsb.im/api/0/routeset'
 route_cache = {}
 route_lock = threading.Lock()
@@ -136,6 +157,7 @@ def live():
     data = read_json('aircraft.json')
     receiver = read_json('receiver.json')
     lat0, lon0 = receiver.get('lat'), receiver.get('lon')
+    settings=read_settings()
     candidates = []
     for a in data.get('aircraft', []):
         if not isinstance(a.get('lat'), (int,float)) or not isinstance(a.get('lon'),(int,float)):
@@ -149,13 +171,14 @@ def live():
             continue
         b = dict(a)
         km = nm * 1.852
-        if km > 100:
+        if km > settings['radius_km']:
             continue
         b['distance_km'] = round(km,1)
         candidates.append(b)
     candidates.sort(key=lambda a: a['distance_km'])
-    if candidates:
-        route = get_route(candidates[0])
+    candidates=candidates[:settings['aircraft_count']]
+    for aircraft in candidates:
+        route = get_route(aircraft)
         if route:
             route = dict(route)
             origin_airport = lookup_airport(route.get('origin'))
@@ -169,11 +192,11 @@ def live():
                 coords = (dest_airport['lat'], dest_airport['lon'])
             if coords:
                 route['distance_to_destination_km'] = round(
-                    distance_nm(candidates[0]['lat'], candidates[0]['lon'], coords[0], coords[1])*1.852,1)
-        candidates[0]['route'] = route
+                    distance_nm(aircraft['lat'], aircraft['lon'], coords[0], coords[1])*1.852,1)
+        aircraft['route'] = route
     return {'now':data.get('now'),'count':len(data.get('aircraft',[])),
             'positioned':len(candidates),'receiver':{'lat':lat0,'lon':lon0},
-            'aircraft':candidates[:10], 'radius_km':100,'source':'local ADS-B readsb'}
+            'aircraft':candidates, 'radius_km':settings['radius_km'], 'aircraft_count':settings['aircraft_count'], 'source':'local ADS-B readsb'}
 
 class Handler(BaseHTTPRequestHandler):
     def send(self, code, body, mime):
@@ -188,6 +211,10 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path in ('/', '/index.html'):
             self.send(200, (BASE/'index.html').read_bytes(), 'text/html; charset=utf-8')
+        elif path in ('/setup','/setup.html'):
+            self.send(200,(BASE/'setup.html').read_bytes(),'text/html; charset=utf-8')
+        elif path == '/api/settings':
+            self.send(200,json.dumps(read_settings()).encode(),'application/json')
         elif path == '/api/live':
             try:
                 output = live()
@@ -206,6 +233,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send(204,b'','image/x-icon')
         else:
             self.send(404,b'Not found','text/plain; charset=utf-8')
+    def do_POST(self):
+        if urlsplit(self.path).path!='/api/settings':
+            self.send(404,b'Not found','text/plain; charset=utf-8')
+            return
+        try:
+            length=int(self.headers.get('Content-Length','0'))
+            if not 0<length<=4096: raise ValueError('Invalid request size')
+            settings=write_settings(json.loads(self.rfile.read(length)))
+            self.send(200,json.dumps(settings).encode(),'application/json')
+        except (ValueError,TypeError) as exc:
+            self.send(400,json.dumps({'error':str(exc)}).encode(),'application/json')
+        except OSError as exc:
+            print('Settings write failed:',exc,flush=True)
+            self.send(500,b'{"error":"Unable to save settings"}','application/json')
     def log_message(self, fmt, *args):
         if not self.path.startswith('/api/live'):
             super().log_message(fmt,*args)
