@@ -179,7 +179,7 @@ def live():
     candidates.sort(key=lambda a: a['distance_km'])
     candidates=candidates[:settings['aircraft_count']]
     for aircraft in candidates:
-        aircraft['metadata'] = lookup_aircraft_metadata(aircraft.get('hex'))
+        aircraft['metadata'] = lookup_aircraft_metadata(aircraft.get('hex'), aircraft.get('r'))
         route = get_route(aircraft)
         if route:
             route = dict(route)
