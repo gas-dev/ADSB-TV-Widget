@@ -44,3 +44,18 @@ Non esporre la porta 8090 direttamente su Internet.
 The airport_db.py module downloads the public-domain OurAirports airports.csv and countries.csv in a background thread, caches matching IATA/ICAO codes in /var/cache/adsb-tv/airports.json, and provides country names and coordinates without per-second web requests. A first lookup can take some seconds. If the download fails, country remains unavailable. Source: https://ourairports.com/data/
 
 For manual updates, copy airport_db.py alongside server.py and index.html into /opt/adsb-tv before restarting the service.
+
+## TV setup and multi-aircraft rotation
+
+Open `http://RASPBERRY-IP:8090/setup` and configure the maximum radius (1-500 km) and number of closest aircraft (1-20). Settings are persisted in `/var/cache/adsb-tv/settings.json`; defaults are 100 km and 1 aircraft. The TV rotates through the available closest aircraft every 10 seconds while updating telemetry and all radar positions every second. The current card is highlighted in yellow on the north-up radar, while the other selected aircraft are shown in blue. The radar's outer range is the configured maximum.
+
+To upgrade an existing installation:
+
+```bash
+cd ~/ADSB-TV-Widget
+git pull --ff-only
+sudo install -m 644 server.py index.html setup.html airport_db.py photo_db.py /opt/adsb-tv/
+sudo systemctl restart adsb-tv
+```
+
+To test: `curl -s http://127.0.0.1:8090/api/settings`. The setup page writes settings through `POST /api/settings`. Only expose this service on a trusted LAN because setup currently has no authentication.
