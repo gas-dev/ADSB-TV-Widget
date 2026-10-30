@@ -73,9 +73,10 @@ main{padding:clamp(18px,3vw,52px);max-width:1920px;margin:auto}.top{display:flex
 }
 .aircraft-details{color:#9ed5e9;font-size:clamp(12px,.97vw,17px);line-height:1.25;margin:4px 0 8px;max-width:100%;overflow-wrap:anywhere}.aircraft-details:empty{display:none}
 @media(min-width:1000px) and (orientation:landscape){.aircraft-details{font-size:clamp(13px,1vw,18px);max-height:3em;overflow:hidden}}
+.flight-extras{display:flex;gap:clamp(10px,2vw,28px);margin-top:7px;flex-wrap:wrap}.flight-extras>div{display:flex;flex-direction:column;gap:2px}.flight-extras strong{font-size:clamp(18px,1.7vw,29px);color:#e4f7ff;line-height:1.1}.extra-label{color:#80a8c6;text-transform:uppercase;font-size:clamp(10px,.75vw,13px);letter-spacing:.04em}.live-extras{color:#9ed5e9;font-size:clamp(11px,.89vw,15px);margin-top:6px;line-height:1.25}.live-extras:empty{display:none}@media(min-width:1000px) and (orientation:landscape){.flight-extras{margin-top:clamp(3px,.5vh,7px)}.flight-extras strong{font-size:clamp(17px,1.7vw,26px)}.live-extras{font-size:clamp(10px,.85vw,14px);margin-top:3px}.hero>.panel:first-child>.value{margin-bottom:0}}
 </style></head><body><main>
 <header class="top"><div><div class="brand">✈ ADSB TV <span style="color:#5ddcd6">/ RADAR LIVE</span></div><div class="sub" style="margin-top:8px">Stazione IU0VESADSBKAS01</div></div><div class="top-right-tools"><a href="/setup" style="color:#9bdaf0;text-decoration:none;font-weight:700">⚙ Setup</a><div class="rotate-timer" id="rotateTimer" title="Tempo al prossimo aereo"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="bg" cx="18" cy="18" r="14"/><circle class="fg" id="rotateProgress" cx="18" cy="18" r="14"/></svg></div><span class="pill"><span class="dot"></span><span id="status">IN ATTESA</span></span></div></header>
-<section class="hero"><article class="panel"><div class="sub">Aeromobile più vicino alla tua antenna</div><div class="flight-header"><div class="flight-info"><h1 id="flight">RICERCA...</h1><h2 id="model">In attesa di dati ADS-B</h2><div id="aircraftDetails" class="aircraft-details" aria-live="polite"></div></div><div class="photo-column"><div class="aircraft-photo"><img id="aircraftPhoto" alt="Aircraft photo"><span class="muted" id="photoEmpty">✈ Photo unavailable</span></div><div class="photo-credit" id="photoCredit"></div></div></div><div class="sub">Distanza orizzontale</div><div class="big"><span id="distance">--</span> <span class="unit">km</span></div><div class="route"><div><div class="sub">Partenza</div><strong id="origin">N/D</strong><div class="muted" id="originName">Airport unavailable</div><div class="muted" id="originCountry">Country unavailable</div></div><div class="arrow">✈ →</div><div style="text-align:right"><div class="sub">Destinazione</div><strong id="destination">N/D</strong><div class="muted" id="destinationName">Airport unavailable</div><div class="muted" id="destinationCountry">Country unavailable</div></div></div><div class="sub" style="margin-top:24px">Distanza diretta alla destinazione</div><div class="value"><span id="remaining">N/D</span> <small id="remainingUnit"></small></div><p class="muted" style="margin:20px 0 0"><span id="routeinfo">Rotta stimata da fonte esterna quando disponibile.</span></p></article>
+<section class="hero"><article class="panel"><div class="sub">Aeromobile più vicino alla tua antenna</div><div class="flight-header"><div class="flight-info"><h1 id="flight">RICERCA...</h1><h2 id="model">In attesa di dati ADS-B</h2><div id="aircraftDetails" class="aircraft-details" aria-live="polite"></div></div><div class="photo-column"><div class="aircraft-photo"><img id="aircraftPhoto" alt="Aircraft photo"><span class="muted" id="photoEmpty">✈ Photo unavailable</span></div><div class="photo-credit" id="photoCredit"></div></div></div><div class="sub">Distanza orizzontale</div><div class="big"><span id="distance">--</span> <span class="unit">km</span></div><div class="route"><div><div class="sub">Partenza</div><strong id="origin">N/D</strong><div class="muted" id="originName">Airport unavailable</div><div class="muted" id="originCountry">Country unavailable</div></div><div class="arrow">✈ →</div><div style="text-align:right"><div class="sub">Destinazione</div><strong id="destination">N/D</strong><div class="muted" id="destinationName">Airport unavailable</div><div class="muted" id="destinationCountry">Country unavailable</div></div></div><div class="sub" style="margin-top:24px">Distanza diretta alla destinazione</div><div class="value"><span id="remaining">N/D</span> <small id="remainingUnit"></small></div><div class="flight-extras"><div><span class="extra-label">Arrivo teorico</span><strong id="eta">N/D</strong></div><div><span class="extra-label">Tempo teorico residuo</span><strong id="timeRemaining">N/D</strong></div></div><div class="live-extras" id="liveExtras"></div><p class="muted" style="margin:6px 0 0"><span id="routeinfo">Rotta stimata da fonte esterna quando disponibile.</span></p></article>
 <article class="panel radar-panel"><div class="sub">Rilevamento · posizione relativa</div><div class="radar-wrap" style="margin-top:12px"><div class="radar"><span class="compass north">N</span><span class="compass east">E</span><span class="compass south">S</span><span class="compass west">W</span><div class="ring-label" id="midRange">50 km</div><div class="center"></div><div id="radarTargets"></div></div><div class="radartext"><span id="maxRange">100 km</span> AL BORDO · NORD IN ALTO</div></div></article></section>
 <section class="cards"><article class="panel"><div class="sub">Velocità al suolo</div><div class="value"><span id="speed">--</span> <small>km/h</small></div></article><article class="panel"><div class="sub">Quota barometrica</div><div class="value"><span id="altitude">--</span> <small>m</small></div></article><article class="panel"><div class="sub">Rotta rispetto al nord</div><div class="value"><span id="track">--</span> <small>°</small></div></article></section>
 <section class="bottom"><article class="panel"><div class="sub">Matricola</div><div class="value" id="reg">--</div></article><article class="panel"><div class="sub">Tipo ICAO</div><div class="value" id="type">--</div></article><article class="panel"><div class="sub">Velocità verticale</div><div class="value"><span id="vertical">--</span> <small>m/min</small></div></article><article class="panel"><div class="sub">Codice transponder</div><div class="value" id="squawk">--</div></article></section>
@@ -156,6 +157,14 @@ function drawRadar(planes,selectedHex,radiusKm){
  for(const item of Array.from(host.children))if(!active.has(item.id))item.remove();
  el('maxRange').textContent=num(radiusKm,0)+' km';el('midRange').textContent=num(radiusKm/2,0)+' km';
 }
+function formatEta(distanceKm, speedKnots){
+ if(typeof distanceKm!=='number'||!Number.isFinite(distanceKm)||typeof speedKnots!=='number'||!Number.isFinite(speedKnots)||speedKnots<55)return null;
+ const hours=distanceKm/(speedKnots*1.852);
+ if(!Number.isFinite(hours)||hours<0||hours>24)return null;
+ const minutes=Math.ceil(hours*60);
+ const estimated=new Date(Date.now()+minutes*60000);
+ return {clock:estimated.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),duration:minutes>=60?Math.floor(minutes/60)+' h '+String(minutes%60).padStart(2,'0')+' min':minutes+' min'};
+}
 function showPlane(p){
  updatePhoto(p.hex,p.r,p.t);
  const r=p.route||{};
@@ -171,6 +180,15 @@ function showPlane(p){
  el('destinationCountry').textContent=r.destination_country||'Country unavailable';
  el('remaining').textContent=typeof r.distance_to_destination_km==='number'?num(r.distance_to_destination_km,1):'N/D';
  el('remainingUnit').textContent=typeof r.distance_to_destination_km==='number'?'km':'';
+ const eta=formatEta(r.distance_to_destination_km,p.gs);
+ el('eta').textContent=eta?eta.clock:'N/D';el('timeRemaining').textContent=eta?eta.duration:'N/D';
+ const extras=[];
+ if(typeof p.ias==='number')extras.push('IAS '+num(p.ias*1.852)+' km/h');
+ if(typeof p.mach==='number')extras.push('Mach '+num(p.mach,2));
+ const selectedAlt=typeof p.nav_altitude_fms==='number'?p.nav_altitude_fms:p.nav_altitude_mcp;
+ if(typeof selectedAlt==='number')extras.push('Quota selezionata '+num(selectedAlt*.3048)+' m');
+ if(typeof p.baro_rate==='number')extras.push(p.baro_rate>100?'In salita':p.baro_rate< -100?'In discesa':'Quota stabile');
+ el('liveExtras').textContent=extras.join(' · ');
  el('routeinfo').textContent=p.route?'Rotta stimata · '+text(r.origin_name)+' → '+text(r.destination_name)+' · '+text(r.provider):'Partenza e destinazione non disponibili o in verifica';
  el('distance').textContent=num(p.distance_km,1);
  el('speed').textContent=num(typeof p.gs==='number'?p.gs*1.852:null);
@@ -182,7 +200,7 @@ function showPlane(p){
 }
 function emptyDisplay(){
  updatePhoto(null);currentAircraft=null;
- el('flight').textContent='NESSUN AEREO';el('aircraftDetails').textContent='';
+ el('flight').textContent='NESSUN AEREO';el('aircraftDetails').textContent='';el('eta').textContent='N/D';el('timeRemaining').textContent='N/D';el('liveExtras').textContent='';
  el('model').textContent='Nessun aeromobile entro il raggio configurato';
  for(const id of ['distance','speed','altitude','track','reg','type','vertical','squawk'])el(id).textContent='--';
  for(const id of ['origin','destination','remaining'])el(id).textContent='N/D';
