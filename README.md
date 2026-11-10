@@ -2,6 +2,15 @@
 
 A lightweight, self-hosted aircraft dashboard designed for televisions, wall displays and always-on browsers. It turns an existing local ADS-B receiver into a continuously updating aircraft information screen.
 
+## Screenshots
+
+<p align="center">
+  <a href="adsbTv_pc.png"><img src="adsbTv_pc.png" alt="ADSB TV Widget desktop dashboard showing live aircraft and radar" width="720"></a>
+  <a href="adsbtv_mobile.jpg"><img src="adsbtv_mobile.jpg" alt="ADSB TV Widget mobile browser view showing live aircraft information" width="220"></a>
+</p>
+
+<p align="center"><sub>Desktop / TV dashboard and mobile browser example. Click either image to see it at full resolution.</sub></p>
+
 **Live example:** https://adsbtv.gasdev.eu/  
 **Source:** https://github.com/gas-dev/ADSB-TV-Widget
 
