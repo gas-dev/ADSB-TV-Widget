@@ -57,7 +57,7 @@ This project is a display companion. It does **not** install an SDR driver, ADS-
 The **Compact** dashboard has also been installed on a **Raspberry Pi 4 inside a protective case with an integrated 3.5-inch-class SPI touchscreen**. This is a real, photographed installation, rather than a desktop-only mock-up. The compact layout was developed to make aircraft tracking practical on a small, always-on screen: it places the active flight and its aircraft photograph at the top, keeps flight details legible in a dense information panel, and retains a live north-up radar alongside them. As each aircraft is selected, the photograph, registration, aircraft type, origin/destination and available telemetry follow that aircraft automatically.
 
 <!-- Photograph of the real Raspberry Pi 4 compact installation: add compact_pi4_case.jpg to the repository alongside this README. -->
-![ADSB TV Compact running on a Raspberry Pi 4 in a case with an SPI touchscreen](compact_pi4_case.jpg)
+![ADSB TV Compact running on a Raspberry Pi 4 in a case with an SPI touchscreen](compact_pi4_case_q40.jpg)
 
 *Real Raspberry Pi 4 installation showing ADSB TV Compact, a live easyJet aircraft photograph, aircraft data and radar. The photo shows the integrated case and small screen in use.*
 
