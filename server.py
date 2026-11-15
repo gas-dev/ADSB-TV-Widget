@@ -236,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path in ('/', '/index.html'):
             self.send(200, (BASE/'index.html').read_bytes(), 'text/html; charset=utf-8')
+        elif path in ('/compact', '/compact.html'):
+            self.send(200, (BASE/'compact.html').read_bytes(), 'text/html; charset=utf-8')
         elif path in ('/setup','/setup.html'):
             if READ_ONLY:
                 self.send(404,b'Not found','text/plain; charset=utf-8')

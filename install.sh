@@ -7,7 +7,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-for file in server.py index.html setup.html airport_db.py photo_db.py aircraft_db.py; do
+for file in server.py index.html compact.html setup.html airport_db.py photo_db.py aircraft_db.py; do
     if [ ! -f "$SCRIPT_DIR/$file" ]; then
         echo "Missing application file: $file" >&2
         exit 1
@@ -54,7 +54,7 @@ fi
 
 install -d -m 755 /opt/adsb-tv
 install -d -m 755 -o "$USER_NAME" -g "$GROUP_NAME" /var/cache/adsb-tv
-install -m 644 "$SCRIPT_DIR/server.py" "$SCRIPT_DIR/index.html" "$SCRIPT_DIR/setup.html" \
+install -m 644 "$SCRIPT_DIR/server.py" "$SCRIPT_DIR/index.html" "$SCRIPT_DIR/compact.html" "$SCRIPT_DIR/setup.html" \
     "$SCRIPT_DIR/airport_db.py" "$SCRIPT_DIR/photo_db.py" "$SCRIPT_DIR/aircraft_db.py" /opt/adsb-tv/
 
 cat > /etc/systemd/system/adsb-tv.service <<UNIT
