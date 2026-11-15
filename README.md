@@ -52,6 +52,14 @@ Missing information is displayed as unavailable rather than being invented.
 
 This project is a display companion. It does **not** install an SDR driver, ADS-B decoder, antenna, or feeder.
 
+## Compact 640×480 display
+
+For 640×480 landscape screens, open `http://DEVICE-IP:8090/compact` or select **640×480** on the normal dashboard. The compact display keeps the live north-up radar and the selected aircraft's callsign, model, horizontal distance, ground speed and barometric altitude. It removes route cards, photos, transponder details and other lower-page telemetry to increase text size and radar space.
+
+The two views share the same feeder and settings, including the configured language, distance/speed/altitude units, aircraft count, radar radius and rotation interval. The original dashboard at `/` remains unchanged apart from the new link. The compact page has a **Full view** link for switching back.
+
+The URL determines the layout: bookmark `/compact` or configure your kiosk browser to launch that URL. Reloads and browser restarts keep the compact layout without cookies, local storage, or server-side per-viewer state. This also works on the public read-only demo once the updated version is deployed, for example `https://adsbtv.gasdev.eu/compact`.
+
 ## Installation
 
 On the device that will run the dashboard:
