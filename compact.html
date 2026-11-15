@@ -13,6 +13,14 @@ a{color:#a6d9ee;text-decoration:none;font-size:12px;font-weight:bold}
 .layout{min-height:0;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:7px}
 .panel{min-width:0;min-height:0;border:1px solid #294761;background:#0b2034;border-radius:9px;padding:8px;overflow:hidden}
 .info{display:flex;flex-direction:column;gap:5px;justify-content:space-between}
+.aircraft-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:7px;align-items:stretch;min-height:107px;max-height:138px;flex:0 1 31%}
+.aircraft-identity{min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.aircraft-photo{position:relative;min-width:0;min-height:0;border:1px solid #355771;border-radius:7px;overflow:hidden;background:#10283b;display:flex;justify-content:center;align-items:center}
+.aircraft-photo img{width:100%;height:100%;display:none;object-fit:contain}
+.photo-empty{font-size:12px;text-align:center;color:#a8c9dc;padding:6px}
+.photo-credit{position:absolute;bottom:0;left:0;right:0;text-align:right;background:#06111fcc;padding:2px 4px;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.photo-credit a{color:#d2e7fa;font-size:9px}
+
 .kicker{font-size:10px;line-height:1.1;color:#a2c7df;font-weight:700;text-transform:uppercase}
 .flight{font-size:29px;font-weight:800;line-height:1.03;overflow-wrap:anywhere;margin-top:3px}
 .model{font-size:15px;font-weight:700;color:#d0e6f5;line-height:1.13;overflow-wrap:anywhere}
@@ -43,14 +51,14 @@ a{color:#a6d9ee;text-decoration:none;font-size:12px;font-weight:bold}
 .target{position:absolute;left:50%;top:50%;width:26px;height:26px;z-index:5;transition:top 1s linear,left 1s linear;filter:drop-shadow(0 0 4px #61d4ea)}
 .target svg{width:100%;height:100%;display:block;fill:#5ec2e5}.target.active svg{fill:#ffe174}
 .radar-note{font-size:11px;color:#9ac2dc;text-align:center}
-@media(max-height:420px){main{padding:4px;gap:3px;grid-template-rows:25px 1fr}.panel{padding:5px}.info{gap:2px}.flight{font-size:23px}.distance{font-size:22px}.metric{padding:2px 3px}.metric .value{font-size:14px}.radar{width:min(100%,calc(100dvh - 76px))}}
+@media(max-height:420px){.aircraft-top{min-height:75px;max-height:95px}.flight{font-size:20px}.model{font-size:12px}.owner{font-size:10px}main{padding:4px;gap:3px;grid-template-rows:25px 1fr}.panel{padding:5px}.info{gap:2px}.flight{font-size:23px}.distance{font-size:22px}.metric{padding:2px 3px}.metric .value{font-size:14px}.radar{width:min(100%,calc(100dvh - 76px))}}
 @media(max-width:550px){main{height:auto;min-height:100dvh;grid-template-rows:29px auto}.layout{grid-template-columns:1fr}.info{gap:9px}.radar{width:min(100%,70vw)}}
 @media(prefers-reduced-motion:reduce){.radar::before{animation:none}}
 </style></head>
 <body><main><header><div class="brand">✈ ADSB TV <span>/ COMPACT</span></div><div class="tools"><a href="/" title="Full dashboard">Full view</a><span id="status" class="status">CONNECTING</span></div></header>
 <div class="layout">
 <section class="panel info" aria-label="Aircraft details">
-<div><div class="kicker" id="aircraftLabel">AIRCRAFT</div><div class="flight" id="flight">SEARCHING…</div><div class="model" id="model">Waiting for ADS-B data</div><div class="owner" id="owner">--</div></div>
+<div class="aircraft-top"><div class="aircraft-identity"><div class="kicker" id="aircraftLabel">AIRCRAFT</div><div class="flight" id="flight">SEARCHING…</div><div class="model" id="model">Waiting for ADS-B data</div><div class="owner" id="owner">--</div></div><div class="aircraft-photo"><img id="aircraftPhoto" alt="Aircraft photograph"><span class="photo-empty" id="photoEmpty">✈ Photo unavailable</span><div class="photo-credit" id="photoCredit"></div></div></div>
 <div><div class="kicker" id="distanceLabel">DISTANCE FROM RECEIVER</div><div class="distance-line"><div class="distance"><span id="distance">--</span> <span class="unit" id="distanceUnit">km</span></div></div></div>
 <div class="route"><div><div class="kicker" id="originLabel">DEPARTURE</div><div class="airport" id="origin">--</div><div class="name" id="originName">--</div></div><div class="arrow">✈ →</div><div class="right"><div class="kicker" id="destinationLabel">DESTINATION</div><div class="airport" id="destination">--</div><div class="name" id="destinationName">--</div></div></div>
 <div class="route-extras"><div class="entry"><div class="kicker" id="remainingLabel">TO DESTINATION</div><div class="value"><span id="remaining">--</span> <span id="remainingUnit"></span></div></div><div class="entry"><div class="kicker" id="etaLabel">ETA (EST.)</div><div class="value" id="eta">--</div></div><div class="entry"><div class="kicker" id="durationLabel">TIME LEFT (EST.)</div><div class="value" id="duration">--</div></div></div>
@@ -80,7 +88,36 @@ const altitude=feet=>settings.altitude_unit==='ft'?[feet,'ft']:[feet*.3048,'m'];
 function translate(){const t=labels[settings.language]||labels.en;['aircraftLabel','distanceLabel','speedLabel','altitudeLabel','radarLabel'].forEach((k,i)=>$(k).textContent=t[i]);document.documentElement.lang=settings.language;
 const extra={en:['DEPARTURE','DESTINATION','TO DESTINATION','ETA (EST.)','TIME LEFT (EST.)','VERTICAL SPEED','REGISTRATION','ICAO TYPE','TRACK','SQUAWK'],it:['PARTENZA','DESTINAZIONE','ALLA DESTINAZIONE','ARRIVO STIMATO','TEMPO RESIDUO','VELOCITÀ VERTICALE','MATRICOLA','TIPO ICAO','ROTTA','TRANSPONDER'],es:['ORIGEN','DESTINO','AL DESTINO','LLEGADA EST.','TIEMPO RESTANTE','VELOCIDAD VERTICAL','MATRÍCULA','TIPO ICAO','RUMBO','TRANSPONDEDOR'],fr:['DÉPART','DESTINATION','VERS DESTINATION','ARRIVÉE EST.','TEMPS RESTANT','VITESSE VERTICALE','IMMATRICULATION','TYPE OACI','CAP','TRANSPONDEUR'],de:['ABFLUG','ZIEL','BIS ZIEL','ANKUNFT (CA.)','RESTZEIT','VERTIKALGESCHW.','KENNZEICHEN','ICAO-TYP','KURS','TRANSPONDER'],ru:['ВЫЛЕТ','НАЗНАЧЕНИЕ','ДО ЦЕЛИ','ПРИБЫТИЕ','ОСТАЛОСЬ','ВЕРТ. СКОРОСТЬ','РЕГИСТРАЦИЯ','ТИП ICAO','КУРС','ТРАНСПОНДЕР']}[settings.language]||['DEPARTURE','DESTINATION','TO DESTINATION','ETA (EST.)','TIME LEFT (EST.)','VERTICAL SPEED','REGISTRATION','ICAO TYPE','TRACK','SQUAWK'];
 ['originLabel','destinationLabel','remainingLabel','etaLabel','durationLabel','verticalLabel','registrationLabel','typeLabel','trackLabel','squawkLabel'].forEach((id,i)=>$(id).textContent=extra[i]);return t}
+let currentPhotoKey='';
+async function updatePhoto(hex,registration,icaoType){
+ const code=String(hex||'').toLowerCase(),reg=String(registration||'').trim(),type=String(icaoType||'').trim();
+ const key=code+'|'+reg+'|'+type;
+ if(key===currentPhotoKey)return;
+ currentPhotoKey=key;
+ const img=$('aircraftPhoto'),empty=$('photoEmpty'),credit=$('photoCredit');
+ img.style.display='none';img.removeAttribute('src');empty.style.display='block';empty.textContent='✈ Photo unavailable';credit.replaceChildren();
+ if(!/^[0-9a-f]{6}$/.test(code))return;
+ const showPhoto=photo=>{
+  if(key!==currentPhotoKey||!photo?.url)return false;
+  const valid=url=>{try{return new URL(url).protocol==='https:'}catch(e){return false}};
+  if(!valid(photo.url))return false;
+  img.onload=()=>{if(key===currentPhotoKey){img.style.display='block';empty.style.display='none'}};
+  img.onerror=()=>{if(key===currentPhotoKey){img.style.display='none';empty.style.display='block';empty.textContent='✈ Photo unavailable';credit.replaceChildren()}};
+  img.src=photo.url;
+  if(valid(photo.link||'')){const link=document.createElement('a');link.href=photo.link;link.target='_blank';link.rel='noopener noreferrer';link.textContent=photo.photographer?'© '+photo.photographer:'Photo: '+(photo.source||'source');credit.replaceChildren(link)}
+  else credit.textContent=photo.photographer?'© '+photo.photographer:(photo.source||'');
+  return true;
+ };
+ try{
+  const params=new URLSearchParams();if(reg)params.set('reg',reg);if(type)params.set('icaoType',type);
+  const response=await fetch('https://api.planespotters.net/pub/photos/hex/'+code.toUpperCase()+(params.size?'?'+params:''),{cache:'no-store'});
+  if(response.ok){const data=await response.json();const p=(data.photos||[])[0];if(p){const thumb=p.thumbnail;const url=typeof thumb==='string'?thumb:thumb?.src;if(showPhoto({url,link:p.link,photographer:p.photographer||p.user,source:'Planespotters.net'}))return}}
+ }catch(e){}
+ if(key!==currentPhotoKey)return;
+ try{const response=await fetch('/api/photo/'+code+'?reg='+encodeURIComponent(reg),{cache:'no-store'});if(response.ok){const data=await response.json();showPhoto(data.photo)}}catch(e){}
+}
 function display(p,t){
+updatePhoto(p.hex,p.r,p.t);
 const r=p.route||{},meta=p.metadata||{};
 const show=v=>v===null||v===undefined||String(v).trim()===''?'--':String(v).trim();
 $('flight').textContent=show((p.flight||'').trim()||p.r||p.hex);
@@ -128,7 +165,7 @@ const response=await fetch('/api/live',{cache:'no-store'});if(!response.ok)throw
 const data=await response.json();settings={...settings,...data.settings};const t=translate(),planes=data.aircraft||[],now=Date.now(),keys=planes.map(p=>p.hex).join(',');
 if(keys!==group){const old=group.split(',')[idx];idx=Math.max(0,planes.findIndex(p=>p.hex===old));group=keys;changedAt=now}
 if(planes.length>1&&now-changedAt>=Math.max(5,settings.rotation_seconds)*1000){idx=(idx+1)%planes.length;changedAt=now}
-if(planes.length){idx=Math.min(idx,planes.length-1);display(planes[idx],t)}else{$('flight').textContent='--';$('model').textContent=t[6];for(const id of ['owner','distance','speed','altitude','vertical','origin','originName','destination','destinationName','remaining','remainingUnit','eta','duration','registration','type','track','squawk','hex','iasmach'])$(id).textContent='--'}
+if(planes.length){idx=Math.min(idx,planes.length-1);display(planes[idx],t)}else{updatePhoto(null,null,null);$('flight').textContent='--';$('model').textContent=t[6];for(const id of ['owner','distance','speed','altitude','vertical','origin','originName','destination','destinationName','remaining','remainingUnit','eta','duration','registration','type','track','squawk','hex','iasmach'])$(id).textContent='--'}
 radar(planes,planes[idx]?.hex,data.radius_km||100);
 $('summary').textContent=planes.length+' '+t[8];$('status').textContent='LIVE';$('status').classList.remove('offline');
 $('updated').textContent=t[9]+' '+new Date().toLocaleTimeString(settings.language);
