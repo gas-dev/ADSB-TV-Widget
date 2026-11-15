@@ -2,6 +2,37 @@
 
 A lightweight, self-hosted ADS-B display widget for PCs, TVs, phones, and embedded devices such as the Raspberry Pi. It turns data from an existing ADS-B receiver into a continuously updating aircraft dashboard in a web browser. The project is a display companion, not a complete ADS-B receiving system.
 
+## Quick setup and configuration
+
+Install the widget on a Linux device with Python 3 and systemd, alongside an existing ADS-B receiver or on another machine that can reach the receiver over HTTP. The widget reads the feeder's `/data/aircraft.json` and `/data/receiver.json`; it does not install or configure the antenna, SDR, or ADS-B decoder.
+
+```bash
+git clone https://github.com/gas-dev/ADSB-TV-Widget.git
+cd ADSB-TV-Widget
+sudo sh install.sh
+```
+
+Then open **`http://DEVICE-IP:8090/setup`** on your trusted local network. The setup page exposes the following options, which are saved and retained after restarts:
+
+| Setting | What you can configure | Default |
+| --- | --- | --- |
+| **Feeder address** | IP address or hostname of an existing ADS-B receiver, local or reachable over the network | `127.0.0.1` |
+| **Feeder HTTP port** | Port serving the feeder JSON data, from 1 to 65535 | `8080` |
+| **Display language** | English, Italian, Spanish, French, German, or Russian | English |
+| **Radar radius** | Show aircraft within **1–500 km** of the receiver | 100 km |
+| **Aircraft count** | Track/display the **1–20 nearest** eligible aircraft | 1 |
+| **Aircraft rotation** | Switch the highlighted aircraft every **5–60 seconds** | 10 seconds |
+| **Distance units** | Kilometres (km), nautical miles (NM), or statute miles (mi) | km |
+| **Speed units** | Kilometres/hour (km/h), knots (kt), or miles/hour (mph) | km/h |
+| **Altitude units** | Metres (m) or feet (ft) | m |
+| **Clock format** | 24-hour or 12-hour (AM/PM) display | 24-hour |
+
+After saving, open **`http://DEVICE-IP:8090/`** for the full dashboard or **`http://DEVICE-IP:8090/compact`** for the smaller-screen layout with aircraft photos, essential flight details and radar. Both views use the same feeder and display settings. Live data is refreshed every second; the configurable rotation interval controls when the highlighted aircraft changes, not the feed polling rate.
+
+**Advanced service options:** `ADSB_TV_PORT` changes the widget's web port (default `8090`), `ADSB_TV_HOST` changes its listening address (default `0.0.0.0`), and `ADSB_TV_READ_ONLY=1` enables public-demo protection, disabling the setup page and settings API. These are service environment variables, **not** controls in the web setup. The installer can also use `ADSB_TV_USER` to select an existing non-root service account. For Internet-facing installations, see [Public demo and security](#public-demo-and-security). Do not expose the normal setup page directly to the Internet.
+
+For hardware requirements, verification commands, updates and troubleshooting, see [Installation](#installation) and the sections below.
+
 ## Screenshots
 
 <p align="center">
@@ -115,7 +146,7 @@ cd ADSB-TV-Widget
 sudo sh install.sh
 ```
 
-The installer copies the six application files into `/opt/adsb-tv/`, creates a systemd service named `adsb-tv`, and stores configuration/cache in `/var/cache/adsb-tv/`. It runs under the account invoking `sudo` rather than assuming a username. To select a different existing service user, run `sudo ADSB_TV_USER=youruser sh install.sh`.
+The installer copies the application files into `/opt/adsb-tv/`, creates a systemd service named `adsb-tv`, and stores configuration/cache in `/var/cache/adsb-tv/`. It runs under the account invoking `sudo` rather than assuming a username. To select a different existing service user, run `sudo ADSB_TV_USER=youruser sh install.sh`.
 
 Open `http://DEVICE-IP:8090/setup` from a browser on your trusted network. Configure the feeder host and HTTP port. Defaults: feeder `127.0.0.1:8080`, dashboard `8090`, radar `100 km`, one aircraft, rotation `10 seconds`. Then open `http://DEVICE-IP:8090/` on the television. Use the browser's full-screen/kiosk mode if desired.
 
