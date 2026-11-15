@@ -52,13 +52,50 @@ Missing information is displayed as unavailable rather than being invented.
 
 This project is a display companion. It does **not** install an SDR driver, ADS-B decoder, antenna, or feeder.
 
-## Compact 640×480 display
+## Compact display: Raspberry Pi 4 touchscreen installation
 
-For 640×480 landscape screens, open `http://DEVICE-IP:8090/compact` or select **640×480** on the normal dashboard. The compact display keeps the live north-up radar and the selected aircraft's callsign, model, horizontal distance, ground speed and barometric altitude. It removes route cards, photos, transponder details and other lower-page telemetry to increase text size and radar space.
+The **Compact** dashboard has also been installed on a **Raspberry Pi 4 inside a protective case with an integrated 3.5-inch-class SPI touchscreen**. This is a real, photographed installation, rather than a desktop-only mock-up. The compact layout was developed to make aircraft tracking practical on a small, always-on screen: it places the active flight and its aircraft photograph at the top, keeps flight details legible in a dense information panel, and retains a live north-up radar alongside them. As each aircraft is selected, the photograph, registration, aircraft type, origin/destination and available telemetry follow that aircraft automatically.
 
-The two views share the same feeder and settings, including the configured language, distance/speed/altitude units, aircraft count, radar radius and rotation interval. The original dashboard at `/` remains unchanged apart from the new link. The compact page has a **Full view** link for switching back.
+<!-- Photograph of the real Raspberry Pi 4 compact installation: add compact_pi4_case.jpg to the repository alongside this README. -->
+![ADSB TV Compact running on a Raspberry Pi 4 in a case with an SPI touchscreen](compact_pi4_case.jpg)
 
-The URL determines the layout: bookmark `/compact` or configure your kiosk browser to launch that URL. Reloads and browser restarts keep the compact layout without cookies, local storage, or server-side per-viewer state. This also works on the public read-only demo once the updated version is deployed, for example `https://adsbtv.gasdev.eu/compact`.
+*Real Raspberry Pi 4 installation showing ADSB TV Compact, a live easyJet aircraft photograph, aircraft data and radar. The photo shows the integrated case and small screen in use.*
+
+### Display and graphics specifications
+
+The following configuration was verified on the pictured Raspberry Pi setup. It describes **this installation**, not mandatory requirements for other Compact users.
+
+| Component | Verified configuration |
+| --- | --- |
+| Host | Raspberry Pi 4, enclosed in a case with integrated touchscreen |
+| Operating system | Debian 13 (Trixie), aarch64, Raspberry Pi kernel 6.18.60+rpt-rpi-v8 |
+| LCD controller / kernel module | ILI9486 / `ili9486` DRM framebuffer (`ili9486drmfb`) |
+| Touch controller | ADS7846, mapped to `SPI-1` |
+| Physical display mode | **480 × 320 pixels**, 30 Hz |
+| Reported display size | 73 × 49 mm (DRM output report) |
+| Connection | SPI, via `piscreen` overlay |
+| Overlay rotation | 0 degrees |
+| Tested SPI clock | 16 MHz, 8 MHz and 4 MHz |
+| Stable clock reported in this installation | **4 MHz** |
+| Window system | Wayland / labwc |
+| Remote desktop | WayVNC, port 5900 when enabled |
+| Compact webpage | `/compact`, intended for 640 × 480-class landscape layouts |
+
+The physical LCD remains **480 × 320**. A 640 × 480-class workspace on this device is a **logical or scaled desktop**, not an increase in LCD pixel count. A wlroots/labwc output scale can be adjusted for testing, but rendering quality and available logical space depend on the compositor and browser. The 4 MHz SPI setting was reported to remove major corruption during interactive touchscreen use; faster rates produced intermittent horizontal bands in this particular installation. This is a practical observation, not a guarantee that all ILI9486 modules require that clock.
+
+The tested overlay line is:
+
+```ini
+dtoverlay=piscreen,drm,rotate=0,speed=4000000
+```
+
+### What the Compact view shows
+
+The Compact page at `http://DEVICE-IP:8090/compact` retains the current aircraft's callsign, model, manufacturer and available registration/ownership information, an aircraft **photo with attribution**, distance from the receiver, departure/destination airports, estimated distance to destination, theoretical ETA and remaining time, ground speed, altitude, vertical speed, ICAO aircraft type, registration, heading/track, squawk, ICAO HEX, and available IAS/Mach. The adjacent radar remains north-up and updates from the connected ADS-B receiver.
+
+The photograph uses the same best-effort photo retrieval as the full dashboard, with Planespotters.net and a server-side fallback. If no image is available, a clear placeholder appears instead. Likewise, unavailable flight metadata is shown as unavailable, never fabricated. ETA is a simplified straight-line estimate based on remaining distance and current groundspeed, not an operational ETA.
+
+Compact and full views share the same feeder and language/unit/radar settings. The main dashboard at `/` remains available; Compact has a **Full view** link. You can bookmark `/compact` or launch a kiosk browser directly at that URL. The public read-only demo may also serve `https://adsbtv.gasdev.eu/compact` when that deployment has been updated.
 
 ## Installation
 
