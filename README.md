@@ -1,6 +1,6 @@
 # ADS-B TV Widget
 
-A lightweight, self-hosted aircraft dashboard designed for televisions, wall displays and always-on browsers. It turns an existing local ADS-B receiver into a continuously updating aircraft information screen.
+A lightweight, self-hosted ADS-B display widget for PCs, TVs, phones, and embedded devices such as the Raspberry Pi. It turns data from an existing ADS-B receiver into a continuously updating aircraft dashboard in a web browser. The project is a display companion, not a complete ADS-B receiving system.
 
 ## Screenshots
 
@@ -17,6 +17,14 @@ A lightweight, self-hosted aircraft dashboard designed for televisions, wall dis
 The live demo uses a receiving antenna near Comiso Airport in Sicily, Italy. For geographical reference, the airport's published aerodrome reference point (ARP) is **36°59′45″ N, 14°36′32″ E** (approximately **36.995833° N, 14.608889° E**), **IATA: CIY**. These are **airport coordinates, not the antenna's exact position**.
 
 Aircraft availability depends on the coverage, reception and configuration of the connected feeder.
+
+## Tested ADS-B receiver setup and project scope
+
+This widget has been tested with a **Raspberry Pi connected to an ADS-B receiving antenna**, running the **[adsb-feeder-image project by dirkhh](https://github.com/dirkhh/adsb-feeder-image)**, installed using an image available through **Raspberry Pi Imager**. The feeder image provides the underlying ADS-B reception environment; **ADSB TV Widget** is the separate, lightweight presentation layer that displays aircraft information in a browser.
+
+For installation instructions, supported receiver hardware, ADS-B software, antenna setup, configuration and troubleshooting of the **receiving system**, please consult the original **[dirkhh/adsb-feeder-image documentation](https://github.com/dirkhh/adsb-feeder-image)**. Those components are maintained by their own project and are not bundled with this widget.
+
+ADSB TV Widget is intended to run as a small web-based display on a **desktop or laptop PC, television browser, phone, tablet, or embedded system**. The compact interface has also been tested on a **Raspberry Pi 4 in a case with an integrated SPI touchscreen** (photo and hardware details below). A Raspberry Pi is one tested deployment option, not a requirement: any compatible device with a browser can show the dashboard when it can reach the widget's web service.
 
 ## What it does
 
